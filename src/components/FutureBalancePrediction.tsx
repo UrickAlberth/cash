@@ -30,6 +30,57 @@ interface Props {
   cards: CreditCard[];
 }
 
+// Compute balance up to (but not including) `beforeDate`, treating CC purchases as
+// invoice totals on due dates rather than immediate cash deductions.
+// This avoids double-counting individual CC transactions vs. their aggregated invoice.
+function computeInvoiceBasedBalance(
+  transactions: Transaction[],
+  cards: CreditCard[],
+  beforeDate: Date   // strictly before this date
+): number {
+  const cutoff = new Date(beforeDate);
+  cutoff.setHours(0, 0, 0, 0);
+
+  const pastTxs = transactions.filter(t => {
+    const d = new Date(t.date + 'T12:00:00');
+    d.setHours(0, 0, 0, 0);
+    return d < cutoff;
+  });
+
+  // Non-CC balance: income/savings_withdrawal add, expense/savings subtract
+  const cashBalance = pastTxs.reduce((acc, t) => {
+    if (t.type === 'income' || t.type === 'savings_withdrawal') return acc + t.value;
+    if (t.type === 'credit_card') return acc; // CC handled via invoice totals below
+    return acc - t.value;
+  }, 0);
+
+  // CC invoice totals for billing periods whose due date is before `cutoff`
+  const invoiceExpenses = cards.reduce((total, card) => {
+    const billingTotals: Record<string, number> = {};
+    pastTxs
+      .filter(t => t.type === 'credit_card' && t.cardId === card.id)
+      .forEach(t => {
+        const tDate = new Date(t.date + 'T12:00:00');
+        let billMonth = tDate.getMonth();
+        let billYear = tDate.getFullYear();
+        const tDay = tDate.getDate();
+        if (tDay > card.closingDay) {
+          billMonth++;
+          if (billMonth > 11) { billMonth = 0; billYear++; }
+        }
+        const dueDate = new Date(billYear, billMonth, card.dueDay);
+        dueDate.setHours(0, 0, 0, 0);
+        if (dueDate < cutoff) {
+          const key = `${billYear}-${billMonth}`;
+          billingTotals[key] = (billingTotals[key] || 0) + t.value;
+        }
+      });
+    return total + Object.values(billingTotals).reduce((s, v) => s + v, 0);
+  }, 0);
+
+  return cashBalance - invoiceExpenses;
+}
+
 export function FutureBalancePrediction({ currentBalance, transactions, recurringExpenses, cards }: Props) {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -139,14 +190,42 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
     const now = new Date();
     now.setHours(0,0,0,0);
     const targetStartDate = new Date(selectedYear, selectedMonth, 1);
-    
+
     const pastTransactions = transactions.filter(t => new Date(t.date + 'T12:00:00') < targetStartDate);
-    const pastRealBalance = pastTransactions.reduce((acc, t) => {
+
+    // Non-CC past balance (income adds, expense/savings subtracts; CC skipped here)
+    const pastCashBalance = pastTransactions.reduce((acc, t) => {
       if (t.type === 'income' || t.type === 'savings_withdrawal') return acc + t.value;
+      if (t.type === 'credit_card') return acc; // CC counted via invoice totals below
       return acc - t.value;
     }, 0);
 
-    balance = pastRealBalance;
+    // Past CC invoice totals: only for billing periods already due (due date < now).
+    // Invoices from `now` onwards are handled by getDayProfit's cardBillItems in the loop below.
+    const pastInvoiceExpenses = cards.reduce((total, card) => {
+      const billingTotals: Record<string, number> = {};
+      pastTransactions
+        .filter(t => t.type === 'credit_card' && t.cardId === card.id)
+        .forEach(t => {
+          const tDate = new Date(t.date + 'T12:00:00');
+          let billMonth = tDate.getMonth();
+          let billYear = tDate.getFullYear();
+          const tDay = tDate.getDate();
+          if (tDay > card.closingDay) {
+            billMonth++;
+            if (billMonth > 11) { billMonth = 0; billYear++; }
+          }
+          const dueDate = new Date(billYear, billMonth, card.dueDay);
+          dueDate.setHours(0, 0, 0, 0);
+          if (dueDate < now) {
+            const key = `${billYear}-${billMonth}`;
+            billingTotals[key] = (billingTotals[key] || 0) + t.value;
+          }
+        });
+      return total + Object.values(billingTotals).reduce((s, v) => s + v, 0);
+    }, 0);
+
+    balance = pastCashBalance - pastInvoiceExpenses;
 
     if (targetStartDate > now) {
       let tempDate = new Date(now);
@@ -182,7 +261,8 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
     const data = [];
     const now = new Date();
     now.setHours(0,0,0,0);
-    let chartBalance = currentBalance;
+    // Use invoice-based balance for today so that isPaid status has no effect on the chart
+    let chartBalance = computeInvoiceBasedBalance(transactions, cards, now);
     
     for (let i = 0; i < 12; i++) {
       const mDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
@@ -204,7 +284,7 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
       });
     }
     return data;
-  }, [recurringExpenses, transactions, currentBalance, cards]);
+  }, [recurringExpenses, transactions, cards]);
 
   const currentDayData = detailsDay !== null ? dailyData.find(d => d.day === detailsDay) : null;
 
