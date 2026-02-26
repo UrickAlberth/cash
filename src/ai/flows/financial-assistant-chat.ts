@@ -401,9 +401,6 @@ const getFinancialSummary = ai.defineTool(
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const PRIMARY_MODEL = 'googleai/gemini-2.5-flash';
-const FALLBACK_MODEL = 'googleai/gemini-1.5-flash';
-
 const INFORMATIONAL_DISCLAIMER = `
 AVISO IMPORTANTE: Este assistente fornece apenas educação financeira e explicações informativas de caráter geral. As informações fornecidas NÃO constituem aconselhamento financeiro, de investimento ou jurídico, e NÃO são recomendações personalizadas para sua situação. Para decisões financeiras importantes, consulte um profissional qualificado (contador, assessor financeiro certificado ou advogado).`;
 
@@ -436,13 +433,9 @@ ${INFORMATIONAL_DISCLAIMER}`;
     ];
 
     let output;
-    let usedModel = PRIMARY_MODEL;
-    let fallbackTriggered = false;
 
-    // Primary model attempt
     try {
       ({ output } = await ai.generate({
-        model: PRIMARY_MODEL,
         tools,
         system: systemPrompt,
         prompt: input.message,
@@ -455,85 +448,20 @@ ${INFORMATIONAL_DISCLAIMER}`;
         currentDate: input.currentDate,
         promptLength: input.message.length,
         flow: 'financialAssistantFlow',
-        model: PRIMARY_MODEL,
       });
       throw err;
     }
 
-    // Fallback to gemini-1.5-flash if primary returned empty text
     if (!output?.text) {
-      const outputKeys = output ? Object.keys(output) : [];
-      const hasMessage = !!(output as any)?.message;
-      const hasContent = !!(output as any)?.content;
-      const hasCandidates = !!(output as any)?.candidates;
-      console.warn('[financialAssistantFlow] Primary model returned empty/undefined output, attempting fallback', {
+      console.error('[financialAssistantFlow] AI returned empty/undefined output - unrecoverable', {
         correlationId,
         userId: input.userId,
         currentDate: input.currentDate,
         promptLength: input.message.length,
         flow: 'financialAssistantFlow',
-        model: PRIMARY_MODEL,
-        outputKeys,
-        hasMessage,
-        hasContent,
-        hasCandidates,
-      });
-
-      fallbackTriggered = true;
-      usedModel = FALLBACK_MODEL;
-
-      try {
-        ({ output } = await ai.generate({
-          model: FALLBACK_MODEL,
-          tools,
-          system: systemPrompt,
-          prompt: input.message,
-        }));
-        console.info('[financialAssistantFlow] Fallback model response received', {
-          correlationId,
-          model: FALLBACK_MODEL,
-          fallbackTriggered,
-          hasText: !!output?.text,
-        });
-      } catch (err) {
-        console.error('[financialAssistantFlow] Fallback ai.generate threw an exception', {
-          correlationId,
-          error: err instanceof Error ? err.message : String(err),
-          userId: input.userId,
-          currentDate: input.currentDate,
-          promptLength: input.message.length,
-          flow: 'financialAssistantFlow',
-          model: FALLBACK_MODEL,
-          fallbackTriggered,
-        });
-        throw err;
-      }
-    }
-
-    if (!output?.text) {
-      const outputKeys = output ? Object.keys(output) : [];
-      const hasMessage = !!(output as any)?.message;
-      const hasContent = !!(output as any)?.content;
-      const hasCandidates = !!(output as any)?.candidates;
-      console.warn('[financialAssistantFlow] AI returned empty/undefined output after all attempts', {
-        correlationId,
-        userId: input.userId,
-        currentDate: input.currentDate,
-        promptLength: input.message.length,
-        flow: 'financialAssistantFlow',
-        model: usedModel,
-        fallbackTriggered,
-        outputKeys,
-        hasMessage,
-        hasContent,
-        hasCandidates,
       });
     } else {
-      console.info('[financialAssistantFlow] Response generated', {
-        correlationId,
-        model: usedModel,
-        fallbackTriggered,
-      });
+      console.info('[financialAssistantFlow] Response generated', { correlationId });
     }
 
     // Attempt to extract text from alternative output shapes before falling back
