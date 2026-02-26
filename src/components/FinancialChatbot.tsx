@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MessageCircle, Send, X, Bot, User, Loader2 } from 'lucide-react';
 import { financialAssistantChat } from '@/ai/flows/financial-assistant-chat';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -50,7 +50,8 @@ export function FinancialChatbot({ userId }: Props) {
         currentDate: new Date().toISOString().split('T')[0],
       });
       setMessages((prev) => [...prev, { role: 'assistant', text: result.response }]);
-    } catch {
+    } catch (err) {
+      console.error(err);
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', text: 'Desculpe, ocorreu um erro. Por favor, tente novamente.' },
@@ -88,6 +89,9 @@ export function FinancialChatbot({ userId }: Props) {
               </div>
               Assistente Financeiro
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Assistente financeiro pessoal. Faça perguntas sobre suas finanças.
+            </DialogDescription>
           </DialogHeader>
 
           {/* Messages */}
