@@ -23,6 +23,7 @@ cp .env.example .env.local
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+GOOGLE_API_KEY=your-google-api-key-here
 ```
 
 ### 4. Install dependencies and run
@@ -40,6 +41,7 @@ Set the following environment variables in your Vercel project settings:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `GOOGLE_API_KEY` – Gemini API key from [Google AI Studio](https://aistudio.google.com/app/apikey), required for the AI financial assistant
 
 ## Features
 
