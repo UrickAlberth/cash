@@ -59,6 +59,7 @@ export function TransactionList({ transactions, recurring, categories, cards, on
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [statementType, setStatementType] = useState<'cash' | 'credit'>('cash');
+  const [cardFilter, setCardFilter] = useState<string>('all');
 
   const months = [
     { value: 'all', label: 'Todos os meses' },
@@ -166,9 +167,10 @@ export function TransactionList({ transactions, recurring, categories, cards, on
       const matchesMonth = monthFilter === 'all' || txMonth === monthFilter;
       const matchesYear = yearFilter === 'all' || txYear === yearFilter;
       const matchesSearch = tx.description.toLowerCase().includes(searchTerm.toLowerCase()) || tx.category.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesMonth && matchesYear && matchesSearch;
+      const matchesCard = cardFilter === 'all' || tx.cardId === cardFilter;
+      return matchesMonth && matchesYear && matchesSearch && matchesCard;
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, searchTerm, monthFilter, yearFilter]);
+  }, [transactions, searchTerm, monthFilter, yearFilter, cardFilter]);
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -222,6 +224,19 @@ export function TransactionList({ transactions, recurring, categories, cards, on
                   ))}
                 </SelectContent>
               </Select>
+              {statementType === 'credit' && (
+                <Select value={cardFilter} onValueChange={setCardFilter}>
+                  <SelectTrigger className="w-full sm:w-36 bg-white/50 rounded-xl">
+                    <SelectValue placeholder="Cartão" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {cards.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               {monthFilter !== 'all' && yearFilter !== 'all' && (
                 <Button 
                   variant="outline" 
