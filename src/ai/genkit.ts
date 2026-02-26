@@ -1,7 +1,7 @@
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
 
-const apiKey = 'AIzaSyAeT5hHOsEXoLy24YWGor3RBKdyLYR0BK4';
+const apiKey = process.env.GOOGLE_API_KEY;
 if (!apiKey) {
   throw new Error(
     'Missing GOOGLE_API_KEY environment variable. ' +
