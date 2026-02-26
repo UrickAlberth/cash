@@ -49,7 +49,16 @@ export function FinancialChatbot({ userId }: Props) {
         userId,
         currentDate: new Date().toISOString().split('T')[0],
       });
-      setMessages((prev) => [...prev, { role: 'assistant', text: result.response }]);
+      if (!result?.response) {
+        console.warn('[FinancialChatbot] Server action returned empty response', {
+          hasResult: !!result,
+          responseType: typeof result?.response,
+        });
+      }
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', text: result?.response || 'Desculpe, não consegui processar sua pergunta. Tente novamente.' },
+      ]);
     } catch (err) {
       console.error(err);
       setMessages((prev) => [
