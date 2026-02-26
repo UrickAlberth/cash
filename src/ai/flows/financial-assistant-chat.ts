@@ -425,6 +425,16 @@ Seja objetivo, claro e amigável. Quando apresentar valores monetários, use o f
       prompt: input.message,
     });
 
+    if (!output?.text) {
+      console.warn('[financialAssistantFlow] AI returned empty/undefined output', {
+        userId: input.userId,
+        currentDate: input.currentDate,
+        promptLength: input.message.length,
+        flow: 'financialAssistantFlow',
+        model: 'googleai/gemini-2.5-flash',
+      });
+    }
+
     return { response: output?.text ?? 'Desculpe, não consegui processar sua pergunta. Tente novamente.' };
   },
 );
