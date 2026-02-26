@@ -423,7 +423,8 @@ Você tem acesso a ferramentas que consultam dados reais do usuário no banco de
 NUNCA invente números. Se não souber uma informação, use as ferramentas disponíveis para buscá-la.
 O userId do usuário é: ${input.userId}.
 A data atual é: ${input.currentDate}.
-Seja objetivo, claro e amigável. Quando apresentar valores monetários, use o formato R$ X.XXX,XX.`,
+Seja objetivo, claro e amigável. Quando apresentar valores monetários, use o formato R$ X.XXX,XX.
+IMPORTANTE: Após usar qualquer ferramenta, você DEVE sempre retornar uma RESPOSTA FINAL em texto para o usuário. Nunca encerre sem texto de resposta.`,
         prompt: input.message,
       }));
     } catch (err) {
@@ -439,16 +440,32 @@ Seja objetivo, claro e amigável. Quando apresentar valores monetários, use o f
     }
 
     if (!output?.text) {
+      const outputKeys = output ? Object.keys(output) : [];
+      const hasMessage = !!(output as any)?.message;
+      const hasContent = !!(output as any)?.content;
+      const hasCandidates = !!(output as any)?.candidates;
       console.warn('[financialAssistantFlow] AI returned empty/undefined output', {
         userId: input.userId,
         currentDate: input.currentDate,
         promptLength: input.message.length,
         flow: 'financialAssistantFlow',
         model: 'googleai/gemini-2.5-flash',
+        outputKeys,
+        hasMessage,
+        hasContent,
+        hasCandidates,
       });
     }
 
-    return { response: output?.text ?? 'Desculpe, não consegui processar sua pergunta. Tente novamente.' };
+    // Attempt to extract text from alternative output shapes before falling back
+    const responseText: string =
+      output?.text ||
+      (output as any)?.message?.content?.[0]?.text ||
+      (output as any)?.content?.[0]?.text ||
+      (output as any)?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      '';
+
+    return { response: responseText || 'Desculpe, não consegui processar sua pergunta. Tente novamente.' };
   },
 );
 
