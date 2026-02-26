@@ -407,23 +407,36 @@ const financialAssistantFlow = ai.defineFlow(
     outputSchema: FinancialAssistantOutputSchema,
   },
   async (input) => {
-    const { output } = await ai.generate({
-      model: 'googleai/gemini-2.5-flash',
-      tools: [
-        getCardBillByMonth,
-        getProjectedBalance,
-        getTotalExpensesByMonth,
-        getBiggestExpenseOfMonth,
-        getFinancialSummary,
-      ],
-      system: `Você é um assistente financeiro pessoal do app RosaCash. Responda sempre em português brasileiro.
+    let output;
+    try {
+      ({ output } = await ai.generate({
+        model: 'googleai/gemini-2.5-flash',
+        tools: [
+          getCardBillByMonth,
+          getProjectedBalance,
+          getTotalExpensesByMonth,
+          getBiggestExpenseOfMonth,
+          getFinancialSummary,
+        ],
+        system: `Você é um assistente financeiro pessoal do app RosaCash. Responda sempre em português brasileiro.
 Você tem acesso a ferramentas que consultam dados reais do usuário no banco de dados.
 NUNCA invente números. Se não souber uma informação, use as ferramentas disponíveis para buscá-la.
 O userId do usuário é: ${input.userId}.
 A data atual é: ${input.currentDate}.
 Seja objetivo, claro e amigável. Quando apresentar valores monetários, use o formato R$ X.XXX,XX.`,
-      prompt: input.message,
-    });
+        prompt: input.message,
+      }));
+    } catch (err) {
+      console.error('[financialAssistantFlow] ai.generate threw an exception', {
+        error: err instanceof Error ? err.message : String(err),
+        userId: input.userId,
+        currentDate: input.currentDate,
+        promptLength: input.message.length,
+        flow: 'financialAssistantFlow',
+        model: 'googleai/gemini-2.5-flash',
+      });
+      throw err;
+    }
 
     if (!output?.text) {
       console.warn('[financialAssistantFlow] AI returned empty/undefined output', {
