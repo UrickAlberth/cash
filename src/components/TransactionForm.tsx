@@ -9,8 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TransactionType, Category, CreditCard } from '@/lib/types';
-import { intelligentTransactionCategorization } from '@/ai/flows/intelligent-transaction-categorization';
-import { Sparkles, Plus, CreditCard as CardIcon, ArrowUpCircle, ArrowDownCircle, PiggyBank, ListRestart, Wallet, PlusCircle } from 'lucide-react';
+import { Plus, CreditCard as CardIcon, ArrowUpCircle, ArrowDownCircle, PiggyBank, Wallet, PlusCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
@@ -31,33 +30,11 @@ export function TransactionForm({ categories, cards, onAdd, onAddCategory }: Pro
   const [installments, setInstallments] = useState('1');
   const [cardId, setCardId] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
-  const [isCategorizing, setIsCategorizing] = useState(false);
 
   // Modal para nova categoria
   const [isNewCatOpen, setIsNewCatOpen] = useState(false);
   const [newCatName, setNewCatName] = useState('');
   const [newCatColor, setNewCatColor] = useState('#E87DC0');
-
-  const handleCategorize = async () => {
-    if (!description) {
-      toast({ title: "Descrição vazia", description: "Digite uma descrição para a IA." });
-      return;
-    }
-    setIsCategorizing(true);
-    try {
-      const result = await intelligentTransactionCategorization({
-        transactionDescription: description,
-        availableCategories: categories.map(c => c.name),
-      });
-      setCategory(result.suggestedCategory);
-      setSubcategory(result.suggestedSubcategory);
-      toast({ title: "Sugerido!", description: result.suggestedCategory });
-    } catch (error) {
-      toast({ title: "Erro na IA", description: "Tente novamente." });
-    } finally {
-      setIsCategorizing(false);
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,12 +123,7 @@ export function TransactionForm({ categories, cards, onAdd, onAddCategory }: Pro
 
           <div className="space-y-2">
             <Label>Descrição</Label>
-            <div className="relative">
-              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="O que foi?" className="pr-12 h-12 rounded-xl" />
-              <Button type="button" size="icon" variant="ghost" className="absolute right-1 top-1 text-primary" onClick={handleCategorize} disabled={isCategorizing}>
-                <Sparkles className={`w-5 h-5 ${isCategorizing ? 'animate-spin' : ''}`} />
-              </Button>
-            </div>
+            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="O que foi?" className="h-12 rounded-xl" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

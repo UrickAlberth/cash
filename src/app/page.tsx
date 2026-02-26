@@ -9,6 +9,7 @@ import { TransactionList } from '@/components/TransactionList';
 import { CreditCardBills } from '@/components/CreditCardBills';
 import { CreditCardManager } from '@/components/CreditCardManager';
 import { AccountsPayable } from '@/components/AccountsPayable';
+import { FinancialChatbot } from '@/components/FinancialChatbot';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   fetchTransactions, insertTransaction, upsertTransaction,
@@ -592,6 +593,8 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
           )}
         </DialogContent>
       </Dialog>
+
+      <FinancialChatbot userId={userId} />
     </div>
   );
 }

@@ -1,4 +1,4 @@
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/intelligent-transaction-categorization.ts';
+import '@/ai/flows/financial-assistant-chat.ts';
