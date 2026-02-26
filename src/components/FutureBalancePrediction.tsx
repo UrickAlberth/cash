@@ -30,6 +30,25 @@ interface Props {
   cards: CreditCard[];
 }
 
+// Clamp dueDay to the last day of the month (e.g., dueDay=31 in Feb → Feb 28/29)
+function clampDueDate(year: number, month: number, dueDay: number): Date {
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const d = new Date(year, month, Math.min(dueDay, lastDay));
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+// Compute the invoice due date for a CC transaction given a card's closing/due day
+function computeTransactionDueDate(txDate: Date, card: CreditCard): Date {
+  let billMonth = txDate.getMonth();
+  let billYear = txDate.getFullYear();
+  if (txDate.getDate() > card.closingDay) {
+    billMonth++;
+    if (billMonth > 11) { billMonth = 0; billYear++; }
+  }
+  return clampDueDate(billYear, billMonth, card.dueDay);
+}
+
 // Compute balance up to (but not including) `beforeDate`, treating CC purchases as
 // invoice totals on due dates rather than immediate cash deductions.
 // This avoids double-counting individual CC transactions vs. their aggregated invoice.
@@ -68,8 +87,7 @@ function computeInvoiceBasedBalance(
           billMonth++;
           if (billMonth > 11) { billMonth = 0; billYear++; }
         }
-        const dueDate = new Date(billYear, billMonth, card.dueDay);
-        dueDate.setHours(0, 0, 0, 0);
+        const dueDate = clampDueDate(billYear, billMonth, card.dueDay);
         if (dueDate < cutoff) {
           const key = `${billYear}-${billMonth}`;
           billingTotals[key] = (billingTotals[key] || 0) + t.value;
@@ -126,20 +144,16 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
       return false; // No passado, só conta o que está no extrato real
     });
 
-    const cardBillItems = targetDate >= now ? cards.map(card => {
-      if (card.dueDay !== day) return null;
-      
+    const cardBillItems = cards.map(card => {
+      const dueDateForMonth = clampDueDate(year, month, card.dueDay);
+      if (dueDateForMonth.getTime() !== targetDate.getTime()) return null;
+
       const billTransactions = transactions.filter(t => {
         if (t.type !== 'credit_card' || t.cardId !== card.id) return false;
         const tDate = new Date(t.date + 'T12:00:00');
-        const tDay = tDate.getDate();
-        let tMonth = tDate.getMonth();
-        let tYear = tDate.getFullYear();
-        if (tDay > card.closingDay) {
-          tMonth++;
-          if (tMonth > 11) { tMonth = 0; tYear++; }
-        }
-        return tMonth === month && tYear === year;
+        tDate.setHours(0, 0, 0, 0);
+        const txDueDate = computeTransactionDueDate(tDate, card);
+        return txDueDate.getTime() === targetDate.getTime();
       });
 
       const total = billTransactions.reduce((acc, t) => acc + t.value, 0);
@@ -153,7 +167,7 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
         category: 'Cartão de Crédito',
         isBill: true
       };
-    }).filter(Boolean) : [];
+    }).filter(Boolean);
 
     const incomeItems = [
       ...dayTransactions.filter(t => t.type === 'income' || t.type === 'savings_withdrawal'),
@@ -161,7 +175,7 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
     ];
     
     const expenseItems = [
-      ...dayTransactions.filter(t => t.type === 'expense' || t.type === 'credit_card'),
+      ...dayTransactions.filter(t => t.type === 'expense'),
       ...dayRecurring.filter(r => r.type === 'expense'),
       ...(cardBillItems as any[])
     ];
@@ -186,54 +200,22 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
   };
 
   const projectedStartBalance = useMemo(() => {
-    let balance = 0;
     const now = new Date();
-    now.setHours(0,0,0,0);
+    now.setHours(0, 0, 0, 0);
     const targetStartDate = new Date(selectedYear, selectedMonth, 1);
+    targetStartDate.setHours(0, 0, 0, 0);
 
-    const pastTransactions = transactions.filter(t => new Date(t.date + 'T12:00:00') < targetStartDate);
+    // For past or current month: use actual transaction data up to the start of the month
+    if (targetStartDate <= now) {
+      return computeInvoiceBasedBalance(transactions, cards, targetStartDate);
+    }
 
-    // Non-CC past balance (income adds, expense/savings subtracts; CC skipped here)
-    const pastCashBalance = pastTransactions.reduce((acc, t) => {
-      if (t.type === 'income' || t.type === 'savings_withdrawal') return acc + t.value;
-      if (t.type === 'credit_card') return acc; // CC counted via invoice totals below
-      return acc - t.value;
-    }, 0);
-
-    // Past CC invoice totals: only for billing periods already due (due date < now).
-    // Invoices from `now` onwards are handled by getDayProfit's cardBillItems in the loop below.
-    const pastInvoiceExpenses = cards.reduce((total, card) => {
-      const billingTotals: Record<string, number> = {};
-      pastTransactions
-        .filter(t => t.type === 'credit_card' && t.cardId === card.id)
-        .forEach(t => {
-          const tDate = new Date(t.date + 'T12:00:00');
-          let billMonth = tDate.getMonth();
-          let billYear = tDate.getFullYear();
-          const tDay = tDate.getDate();
-          if (tDay > card.closingDay) {
-            billMonth++;
-            if (billMonth > 11) { billMonth = 0; billYear++; }
-          }
-          const dueDate = new Date(billYear, billMonth, card.dueDay);
-          dueDate.setHours(0, 0, 0, 0);
-          if (dueDate < now) {
-            const key = `${billYear}-${billMonth}`;
-            billingTotals[key] = (billingTotals[key] || 0) + t.value;
-          }
-        });
-      return total + Object.values(billingTotals).reduce((s, v) => s + v, 0);
-    }, 0);
-
-    balance = pastCashBalance - pastInvoiceExpenses;
-
-    if (targetStartDate > now) {
-      let tempDate = new Date(now);
-      while (tempDate < targetStartDate) {
-        const dayData = getDayProfit(tempDate.getDate(), tempDate.getMonth(), tempDate.getFullYear());
-        balance += dayData.profit;
-        tempDate.setDate(tempDate.getDate() + 1);
-      }
+    // For future months: start from today's invoice-based balance and project forward
+    let balance = computeInvoiceBasedBalance(transactions, cards, now);
+    let tempDate = new Date(now);
+    while (tempDate < targetStartDate) {
+      balance += getDayProfit(tempDate.getDate(), tempDate.getMonth(), tempDate.getFullYear()).profit;
+      tempDate.setDate(tempDate.getDate() + 1);
     }
 
     return balance;
