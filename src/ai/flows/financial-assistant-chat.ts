@@ -7,6 +7,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { supabase } from '@/lib/supabase/client';
+import { randomUUID } from 'node:crypto';
 
 // ── Input / Output schemas ────────────────────────────────────────────────────
 
@@ -398,6 +399,14 @@ const getFinancialSummary = ai.defineTool(
   },
 );
 
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const PRIMARY_MODEL = 'googleai/gemini-2.5-flash';
+const FALLBACK_MODEL = 'googleai/gemini-1.5-flash';
+
+const INFORMATIONAL_DISCLAIMER = `
+AVISO IMPORTANTE: Este assistente fornece apenas educação financeira e explicações informativas de caráter geral. As informações fornecidas NÃO constituem aconselhamento financeiro, de investimento ou jurídico, e NÃO são recomendações personalizadas para sua situação. Para decisões financeiras importantes, consulte um profissional qualificado (contador, assessor financeiro certificado ou advogado).`;
+
 // ── Flow ──────────────────────────────────────────────────────────────────────
 
 const financialAssistantFlow = ai.defineFlow(
@@ -407,36 +416,98 @@ const financialAssistantFlow = ai.defineFlow(
     outputSchema: FinancialAssistantOutputSchema,
   },
   async (input) => {
-    let output;
-    try {
-      ({ output } = await ai.generate({
-        model: 'googleai/gemini-2.5-flash',
-        tools: [
-          getCardBillByMonth,
-          getProjectedBalance,
-          getTotalExpensesByMonth,
-          getBiggestExpenseOfMonth,
-          getFinancialSummary,
-        ],
-        system: `Você é um assistente financeiro pessoal do app RosaCash. Responda sempre em português brasileiro.
+    const correlationId = randomUUID();
+
+    const systemPrompt = `Você é um assistente financeiro pessoal do app RosaCash. Responda sempre em português brasileiro.
 Você tem acesso a ferramentas que consultam dados reais do usuário no banco de dados.
 NUNCA invente números. Se não souber uma informação, use as ferramentas disponíveis para buscá-la.
 O userId do usuário é: ${input.userId}.
 A data atual é: ${input.currentDate}.
 Seja objetivo, claro e amigável. Quando apresentar valores monetários, use o formato R$ X.XXX,XX.
-IMPORTANTE: Após usar qualquer ferramenta, você DEVE sempre retornar uma RESPOSTA FINAL em texto para o usuário. Nunca encerre sem texto de resposta.`,
+IMPORTANTE: Após usar qualquer ferramenta, você DEVE sempre retornar uma RESPOSTA FINAL em texto para o usuário. Nunca encerre sem texto de resposta.
+${INFORMATIONAL_DISCLAIMER}`;
+
+    const tools = [
+      getCardBillByMonth,
+      getProjectedBalance,
+      getTotalExpensesByMonth,
+      getBiggestExpenseOfMonth,
+      getFinancialSummary,
+    ];
+
+    let output;
+    let usedModel = PRIMARY_MODEL;
+    let fallbackTriggered = false;
+
+    // Primary model attempt
+    try {
+      ({ output } = await ai.generate({
+        model: PRIMARY_MODEL,
+        tools,
+        system: systemPrompt,
         prompt: input.message,
       }));
     } catch (err) {
       console.error('[financialAssistantFlow] ai.generate threw an exception', {
+        correlationId,
         error: err instanceof Error ? err.message : String(err),
         userId: input.userId,
         currentDate: input.currentDate,
         promptLength: input.message.length,
         flow: 'financialAssistantFlow',
-        model: 'googleai/gemini-2.5-flash',
+        model: PRIMARY_MODEL,
       });
       throw err;
+    }
+
+    // Fallback to gemini-1.5-flash if primary returned empty text
+    if (!output?.text) {
+      const outputKeys = output ? Object.keys(output) : [];
+      const hasMessage = !!(output as any)?.message;
+      const hasContent = !!(output as any)?.content;
+      const hasCandidates = !!(output as any)?.candidates;
+      console.warn('[financialAssistantFlow] Primary model returned empty/undefined output, attempting fallback', {
+        correlationId,
+        userId: input.userId,
+        currentDate: input.currentDate,
+        promptLength: input.message.length,
+        flow: 'financialAssistantFlow',
+        model: PRIMARY_MODEL,
+        outputKeys,
+        hasMessage,
+        hasContent,
+        hasCandidates,
+      });
+
+      fallbackTriggered = true;
+      usedModel = FALLBACK_MODEL;
+
+      try {
+        ({ output } = await ai.generate({
+          model: FALLBACK_MODEL,
+          tools,
+          system: systemPrompt,
+          prompt: input.message,
+        }));
+        console.info('[financialAssistantFlow] Fallback model response received', {
+          correlationId,
+          model: FALLBACK_MODEL,
+          fallbackTriggered,
+          hasText: !!output?.text,
+        });
+      } catch (err) {
+        console.error('[financialAssistantFlow] Fallback ai.generate threw an exception', {
+          correlationId,
+          error: err instanceof Error ? err.message : String(err),
+          userId: input.userId,
+          currentDate: input.currentDate,
+          promptLength: input.message.length,
+          flow: 'financialAssistantFlow',
+          model: FALLBACK_MODEL,
+          fallbackTriggered,
+        });
+        throw err;
+      }
     }
 
     if (!output?.text) {
@@ -444,16 +515,24 @@ IMPORTANTE: Após usar qualquer ferramenta, você DEVE sempre retornar uma RESPO
       const hasMessage = !!(output as any)?.message;
       const hasContent = !!(output as any)?.content;
       const hasCandidates = !!(output as any)?.candidates;
-      console.warn('[financialAssistantFlow] AI returned empty/undefined output', {
+      console.warn('[financialAssistantFlow] AI returned empty/undefined output after all attempts', {
+        correlationId,
         userId: input.userId,
         currentDate: input.currentDate,
         promptLength: input.message.length,
         flow: 'financialAssistantFlow',
-        model: 'googleai/gemini-2.5-flash',
+        model: usedModel,
+        fallbackTriggered,
         outputKeys,
         hasMessage,
         hasContent,
         hasCandidates,
+      });
+    } else {
+      console.info('[financialAssistantFlow] Response generated', {
+        correlationId,
+        model: usedModel,
+        fallbackTriggered,
       });
     }
 
