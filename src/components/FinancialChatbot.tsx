@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { MessageCircle, Bot, User, Loader2 } from 'lucide-react';
+import { MessageCircle, Bot, User, Loader2, Send } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CreditCard } from '@/lib/types';
 import {
@@ -95,6 +95,7 @@ export function FinancialChatbot({ userId, cards }: Props) {
   ]);
   const [loading, setLoading] = useState(false);
   const [pendingParams, setPendingParams] = useState<ParamState | null>(null);
+  const [freeText, setFreeText] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -180,6 +181,34 @@ export function FinancialChatbot({ userId, cards }: Props) {
       }
 
       setMessages((prev) => [...prev, { role: 'assistant', text: resultText }]);
+    } catch (err) {
+      console.error(err);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', text: 'Desculpe, ocorreu um erro. Por favor, tente novamente.' },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFreeTextSubmit = async () => {
+    const text = freeText.trim();
+    if (!text || loading) return;
+    setFreeText('');
+    setMessages((prev) => [...prev, { role: 'user', text }]);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, userId }),
+      });
+      const data = await res.json();
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', text: data.text ?? data.error ?? 'Sem resposta.' },
+      ]);
     } catch (err) {
       console.error(err);
       setMessages((prev) => [
@@ -366,6 +395,27 @@ export function FinancialChatbot({ userId, cards }: Props) {
               <div ref={bottomRef} />
             </div>
           </ScrollArea>
+
+          {/* Free text input */}
+          <div className="px-4 py-3 border-t border-primary/10 flex-shrink-0 flex gap-2">
+            <Input
+              placeholder="Pergunte algo sobre suas finanças..."
+              value={freeText}
+              onChange={(e) => setFreeText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleFreeTextSubmit(); } }}
+              disabled={loading}
+              className="rounded-xl text-sm flex-1"
+            />
+            <Button
+              size="icon"
+              onClick={handleFreeTextSubmit}
+              disabled={loading || !freeText.trim()}
+              className="rounded-xl h-10 w-10 flex-shrink-0"
+              aria-label="Enviar pergunta"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>
