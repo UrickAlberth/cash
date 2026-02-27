@@ -399,11 +399,6 @@ const getFinancialSummary = ai.defineTool(
   },
 );
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const INFORMATIONAL_DISCLAIMER = `
-AVISO IMPORTANTE: Este assistente fornece apenas educação financeira e explicações informativas de caráter geral. As informações fornecidas NÃO constituem aconselhamento financeiro, de investimento ou jurídico, e NÃO são recomendações personalizadas para sua situação. Para decisões financeiras importantes, consulte um profissional qualificado (contador, assessor financeiro certificado ou advogado).`;
-
 // ── Flow ──────────────────────────────────────────────────────────────────────
 
 const financialAssistantFlow = ai.defineFlow(
@@ -421,8 +416,7 @@ NUNCA invente números. Se não souber uma informação, use as ferramentas disp
 O userId do usuário é: ${input.userId}.
 A data atual é: ${input.currentDate}.
 Seja objetivo, claro e amigável. Quando apresentar valores monetários, use o formato R$ X.XXX,XX.
-IMPORTANTE: Após usar qualquer ferramenta, você DEVE sempre retornar uma RESPOSTA FINAL em texto para o usuário. Nunca encerre sem texto de resposta.
-${INFORMATIONAL_DISCLAIMER}`;
+IMPORTANTE: Após usar qualquer ferramenta, você DEVE sempre retornar uma RESPOSTA FINAL em texto para o usuário. Nunca encerre sem texto de resposta.`;
 
     const tools = [
       getCardBillByMonth,
@@ -464,15 +458,10 @@ ${INFORMATIONAL_DISCLAIMER}`;
       console.info('[financialAssistantFlow] Response generated', { correlationId });
     }
 
-    // Attempt to extract text from alternative output shapes before falling back
-    const responseText: string =
-      output?.text ||
-      (output as any)?.message?.content?.[0]?.text ||
-      (output as any)?.content?.[0]?.text ||
-      (output as any)?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      '';
+    // Use optional chaining and nullish coalescing for clean fallback
+    const responseText = output?.text ?? 'Desculpe, não consegui processar sua pergunta. Tente novamente.';
 
-    return { response: responseText || 'Desculpe, não consegui processar sua pergunta. Tente novamente.' };
+    return { response: responseText };
   },
 );
 
