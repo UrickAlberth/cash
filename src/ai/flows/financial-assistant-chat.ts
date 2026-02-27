@@ -301,33 +301,44 @@ export async function getFinancialHealthSummary({
     .filter((t: any) => t.type === 'savings')
     .reduce((s: number, t: any) => s + t.value, 0);
 
-  const categoryMap: Record<string, number> = {};
-  monthTxs
-    .filter((t: any) => t.type === 'expense' || t.type === 'credit_card')
-    .forEach((t: any) => {
-      categoryMap[t.category] = (categoryMap[t.category] ?? 0) + t.value;
-    });
-
-  const topCategories = Object.entries(categoryMap)
-    .map(([category, total]) => ({ category, total: Number(total.toFixed(2)) }))
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 5);
-
   const recurringItems = recurring.filter((rec: any) => {
     const startD = new Date(rec.start_date + 'T12:00:00');
     const recDate = new Date(year, month - 1, rec.day_of_month);
     return recDate >= startD;
   });
 
+  const recurringExpenses = recurringItems.filter(
+    (r: any) => r.type === 'expense' || r.type === 'credit_card',
+  );
+
+  const recurringExpenseTotal = recurringExpenses.reduce((s: number, r: any) => s + r.value, 0);
+
+  const categoryMap: Record<string, number> = {};
+  monthTxs
+    .filter((t: any) => t.type === 'expense' || t.type === 'credit_card')
+    .forEach((t: any) => {
+      categoryMap[t.category] = (categoryMap[t.category] ?? 0) + t.value;
+    });
+  recurringExpenses.forEach((r: any) => {
+    categoryMap[r.category] = (categoryMap[r.category] ?? 0) + r.value;
+  });
+
+  const topCategories = Object.entries(categoryMap)
+    .map(([category, total]) => ({ category, total: Number(total.toFixed(2)) }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
+
   const recurringTotal = recurringItems.reduce((s: number, r: any) => s + r.value, 0);
+
+  const combinedExpenses = totalExpenses + recurringExpenseTotal;
 
   return {
     month,
     year,
     totalIncome: Number(totalIncome.toFixed(2)),
-    totalExpenses: Number(totalExpenses.toFixed(2)),
+    totalExpenses: Number(combinedExpenses.toFixed(2)),
     totalSavings: Number(totalSavings.toFixed(2)),
-    balance: Number((totalIncome - totalExpenses - totalSavings).toFixed(2)),
+    balance: Number((totalIncome - combinedExpenses - totalSavings).toFixed(2)),
     topCategories,
     recurringTotal: Number(recurringTotal.toFixed(2)),
     recurringCount: recurringItems.length,
