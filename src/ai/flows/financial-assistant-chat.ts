@@ -36,6 +36,17 @@ async function getCardsForUser(userId: string) {
   return data ?? [];
 }
 
+// ── Helper: parse a YYYY-MM-DD string to a UTC Date at noon ──────────────────
+
+function parseDateUTC(dateStr: string): Date {
+  return new Date(Date.UTC(
+    parseInt(dateStr.substring(0, 4)),
+    parseInt(dateStr.substring(5, 7)) - 1,
+    parseInt(dateStr.substring(8, 10)),
+    12, 0, 0
+  ));
+}
+
 // ── Exported financial query functions ───────────────────────────────────────
 
 export async function getCardBill({
@@ -54,8 +65,11 @@ export async function getCardBill({
     getCardsForUser(userId),
   ]);
 
+  const normalizedCardName = cardName.toLowerCase().trim();
   const card = cards.find(
-    (c: any) => c.name.toLowerCase().includes(cardName.toLowerCase()),
+    (c: any) => c.name.toLowerCase().trim() === normalizedCardName
+  ) || cards.find(
+    (c: any) => c.name.toLowerCase().includes(normalizedCardName)
   );
 
   if (!card) {
@@ -65,7 +79,7 @@ export async function getCardBill({
   const total = transactions
     .filter((t: any) => {
       if (t.type !== 'credit_card' || t.card_id !== card.id) return false;
-      const tDate = new Date(t.date + 'T12:00:00');
+      const tDate = parseDateUTC(t.date);
       const tDay = tDate.getDate();
       let billMonth = tDate.getMonth() + 1; // 1-based
       let billYear = tDate.getFullYear();
@@ -106,12 +120,12 @@ export async function getProjectedBalance({
   const currentBalance = income + withdrawal - expense - savings - paidCard;
 
   // Project recurring from today+1 to targetDate
-  const target = new Date(targetDate + 'T12:00:00');
-  const current = new Date(currentDate + 'T12:00:00');
+  const target = parseDateUTC(targetDate);
+  const current = parseDateUTC(currentDate);
   let projectionDelta = 0;
 
   recurring.forEach((rec: any) => {
-    const startDate = new Date(rec.start_date + 'T12:00:00');
+    const startDate = parseDateUTC(rec.start_date);
     // Iterate months between current and target
     const iterStart = new Date(current);
     iterStart.setDate(1);
@@ -177,7 +191,7 @@ export async function getMonthlySummary({
   // Add recurring for this month
   const recurringExpenses: { category: string; value: number }[] = [];
   recurring.forEach((rec: any) => {
-    const startD = new Date(rec.start_date + 'T12:00:00');
+    const startD = parseDateUTC(rec.start_date);
     const recDate = new Date(year, month - 1, rec.day_of_month);
     if (recDate < startD) return;
     if (rec.type === 'expense' || rec.type === 'credit_card') {
@@ -237,7 +251,7 @@ export async function getBiggestExpense({
 
   const recurringItems = recurring
     .filter((rec: any) => {
-      const startD = new Date(rec.start_date + 'T12:00:00');
+      const startD = parseDateUTC(rec.start_date);
       const recDate = new Date(year, month - 1, rec.day_of_month);
       return recDate >= startD && (rec.type === 'expense' || rec.type === 'credit_card');
     })
@@ -302,7 +316,7 @@ export async function getFinancialHealthSummary({
     .reduce((s: number, t: any) => s + t.value, 0);
 
   const recurringItems = recurring.filter((rec: any) => {
-    const startD = new Date(rec.start_date + 'T12:00:00');
+    const startD = parseDateUTC(rec.start_date);
     const recDate = new Date(year, month - 1, rec.day_of_month);
     return recDate >= startD;
   });
