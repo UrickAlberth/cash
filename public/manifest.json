@@ -1,0 +1,18 @@
+{
+  "name": "RosaCash - Seu Sistema Financeiro",
+  "short_name": "RosaCash",
+  "description": "Controle de entrada e saída com elegância e inteligência.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#e91e8c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    }
+  ]
+}

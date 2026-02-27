@@ -1,6 +1,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
+import ServiceWorkerRegister from './sw-register';
 
 export const metadata: Metadata = {
   title: 'RosaCash - Seu Sistema Financeiro',
@@ -15,6 +16,8 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#e91e8c" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -23,6 +26,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
         </AuthProvider>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
