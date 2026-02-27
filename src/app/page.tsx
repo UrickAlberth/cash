@@ -594,7 +594,7 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
         </DialogContent>
       </Dialog>
 
-      <FinancialChatbot userId={userId} cards={cards} />
+      <FinancialChatbot userId={userId} cards={cards} transactions={transactions} recurring={recurring} />
     </div>
   );
 }

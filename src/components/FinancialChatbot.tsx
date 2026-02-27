@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MessageCircle, Bot, User, Loader2, Send } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CreditCard } from '@/lib/types';
+import { CreditCard, Transaction, RecurringExpense } from '@/lib/types';
 import {
   getCardBill,
   getProjectedBalance,
@@ -29,6 +29,8 @@ interface Message {
 interface Props {
   userId: string;
   cards: CreditCard[];
+  transactions: Transaction[];
+  recurring: RecurringExpense[];
 }
 
 type QuestionId = 'card_bill' | 'projected_balance' | 'monthly_summary' | 'biggest_expense' | 'financial_health';
@@ -85,7 +87,7 @@ function formatFinancialHealthResult(result: Awaited<ReturnType<typeof getFinanc
 const currentYear = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => String(currentYear - 2 + i));
 
-export function FinancialChatbot({ userId, cards }: Props) {
+export function FinancialChatbot({ userId, cards, transactions, recurring }: Props) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -202,7 +204,7 @@ export function FinancialChatbot({ userId, cards }: Props) {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, userId }),
+        body: JSON.stringify({ message: text, userId, transactions, recurring, cards }),
       });
       const data = await res.json();
       setMessages((prev) => [
