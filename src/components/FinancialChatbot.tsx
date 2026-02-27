@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -270,13 +271,26 @@ export function FinancialChatbot({ userId, cards, transactions, recurring }: Pro
                     )}
                   </div>
                   <div
-                    className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap ${
+                    className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                       msg.role === 'user'
-                        ? 'bg-primary text-white rounded-tr-sm'
+                        ? 'bg-primary text-white rounded-tr-sm whitespace-pre-wrap'
                         : 'bg-primary/10 text-foreground rounded-tl-sm border border-primary/10'
                     }`}
                   >
-                    {msg.text}
+                    {msg.role === 'user' ? msg.text : (
+                      <ReactMarkdown
+                        components={{
+                          p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+                          ul: ({ children }) => <ul className="list-disc pl-4 mb-1">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal pl-4 mb-1">{children}</ol>,
+                          li: ({ children }) => <li>{children}</li>,
+                          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                          em: ({ children }) => <em className="italic">{children}</em>,
+                        }}
+                      >
+                        {msg.text}
+                      </ReactMarkdown>
+                    )}
                   </div>
                 </div>
               ))}
