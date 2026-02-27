@@ -3,9 +3,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { MessageCircle, Send, Bot, User, Loader2 } from 'lucide-react';
+import { MessageCircle, Bot, User, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { CreditCard } from '@/lib/types';
 import {
   getCardBill,
   getProjectedBalance,
@@ -26,6 +28,7 @@ interface Message {
 
 interface Props {
   userId: string;
+  cards: CreditCard[];
 }
 
 type QuestionId = 'card_bill' | 'projected_balance' | 'monthly_summary' | 'biggest_expense' | 'financial_health';
@@ -79,15 +82,17 @@ function formatFinancialHealthResult(result: Awaited<ReturnType<typeof getFinanc
   return `Saúde financeira em ${MONTH_NAMES[result.month - 1]} de ${result.year}:\n\nReceitas: R$ ${result.totalIncome.toFixed(2)}\nDespesas: R$ ${result.totalExpenses.toFixed(2)}\nPoupança: R$ ${result.totalSavings.toFixed(2)}\nSaldo: R$ ${result.balance.toFixed(2)}\n\nRecorrências: ${result.recurringCount} (R$ ${result.recurringTotal.toFixed(2)})\n\nTop categorias:\n${topCats || '  Nenhuma'}`;
 }
 
-export function FinancialChatbot({ userId }: Props) {
+const currentYear = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => String(currentYear - 2 + i));
+
+export function FinancialChatbot({ userId, cards }: Props) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      text: 'Olá! Sou seu assistente financeiro. Posso responder perguntas sobre suas finanças, como faturas de cartão, saldo projetado, maiores despesas e muito mais. Como posso ajudar?',
+      text: 'Olá! Sou seu assistente financeiro. Escolha uma pergunta abaixo para consultar suas finanças.',
     },
   ]);
-  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [pendingParams, setPendingParams] = useState<ParamState | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -104,7 +109,8 @@ export function FinancialChatbot({ userId }: Props) {
     const year = String(now.getFullYear());
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const targetDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-    setPendingParams({ questionId, cardName: '', month, year, targetDate });
+    const defaultCard = cards.length > 0 ? cards[0].name : '';
+    setPendingParams({ questionId, cardName: defaultCard, month, year, targetDate });
   };
 
   const handleParamSubmit = async () => {
@@ -185,38 +191,7 @@ export function FinancialChatbot({ userId }: Props) {
     }
   };
 
-  const handleSend = async () => {
-    const userMessage = input.trim();
-    if (!userMessage || loading) return;
-
-    setMessages((prev) => [...prev, { role: 'user', text: userMessage }]);
-    setInput('');
-    setLoading(true);
-
-    try {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', text: 'Desculpe, o assistente de chat está sendo atualizado. Tente novamente em breve.' },
-      ]);
-    } catch (err) {
-      console.error(err);
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', text: 'Desculpe, ocorreu um erro. Por favor, tente novamente.' },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const showQuestionBlocks = messages.length === 1 && !pendingParams && !loading;
+  const showQuestionBlocks = messages.length > 0 && messages[messages.length - 1].role === 'assistant' && !pendingParams && !loading;
 
   return (
     <>
@@ -275,10 +250,10 @@ export function FinancialChatbot({ userId }: Props) {
                 </div>
               ))}
 
-              {/* Quick question blocks – shown only on initial state */}
+              {/* Question blocks – shown after every assistant message */}
               {showQuestionBlocks && (
                 <div className="space-y-2 pt-1">
-                  <p className="text-xs text-muted-foreground text-center">Perguntas rápidas:</p>
+                  <p className="text-xs text-muted-foreground text-center">O que deseja consultar?</p>
                   {QUESTION_BLOCKS.map((q) => (
                     <button
                       key={q.id}
@@ -296,31 +271,52 @@ export function FinancialChatbot({ userId }: Props) {
                 <div className="bg-primary/5 border border-primary/15 rounded-2xl p-3 space-y-2">
                   <p className="text-xs font-medium text-primary">Preencha os dados:</p>
                   {pendingParams.questionId === 'card_bill' && (
-                    <Input
-                      placeholder="Nome do cartão"
-                      value={pendingParams.cardName}
-                      onChange={(e) => setPendingParams((p) => p ? { ...p, cardName: e.target.value } : p)}
-                      className="h-8 text-sm rounded-lg"
-                    />
+                    cards.length > 0 ? (
+                      <Select
+                        value={pendingParams.cardName}
+                        onValueChange={(v) => setPendingParams((p) => p ? { ...p, cardName: v } : p)}
+                      >
+                        <SelectTrigger className="h-8 text-sm rounded-lg">
+                          <SelectValue placeholder="Selecione o cartão" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {cards.map((c) => (
+                            <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Nenhum cartão cadastrado.</p>
+                    )
                   )}
                   {pendingParams.questionId !== 'projected_balance' ? (
                     <div className="flex gap-2">
-                      <Input
-                        placeholder="Mês (1-12)"
+                      <Select
                         value={pendingParams.month}
-                        onChange={(e) => setPendingParams((p) => p ? { ...p, month: e.target.value } : p)}
-                        className="h-8 text-sm rounded-lg w-1/2"
-                        type="number"
-                        min="1"
-                        max="12"
-                      />
-                      <Input
-                        placeholder="Ano"
+                        onValueChange={(v) => setPendingParams((p) => p ? { ...p, month: v } : p)}
+                      >
+                        <SelectTrigger className="h-8 text-sm rounded-lg w-1/2">
+                          <SelectValue placeholder="Mês" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MONTH_NAMES.map((name, idx) => (
+                            <SelectItem key={idx + 1} value={String(idx + 1)}>{name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
                         value={pendingParams.year}
-                        onChange={(e) => setPendingParams((p) => p ? { ...p, year: e.target.value } : p)}
-                        className="h-8 text-sm rounded-lg w-1/2"
-                        type="number"
-                      />
+                        onValueChange={(v) => setPendingParams((p) => p ? { ...p, year: v } : p)}
+                      >
+                        <SelectTrigger className="h-8 text-sm rounded-lg w-1/2">
+                          <SelectValue placeholder="Ano" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {YEAR_OPTIONS.map((y) => (
+                            <SelectItem key={y} value={y}>{y}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   ) : (
                     <Input
@@ -347,9 +343,7 @@ export function FinancialChatbot({ userId }: Props) {
                       disabled={
                         (pendingParams.questionId === 'card_bill' && !pendingParams.cardName.trim()) ||
                         (pendingParams.questionId !== 'projected_balance' && (
-                          !pendingParams.month || !pendingParams.year ||
-                          parseInt(pendingParams.month) < 1 || parseInt(pendingParams.month) > 12 ||
-                          parseInt(pendingParams.year) < 1900 || parseInt(pendingParams.year) > 2100
+                          !pendingParams.month || !pendingParams.year
                         ))
                       }
                     >
@@ -372,26 +366,6 @@ export function FinancialChatbot({ userId }: Props) {
               <div ref={bottomRef} />
             </div>
           </ScrollArea>
-
-          {/* Input area */}
-          <div className="px-4 py-3 border-t border-primary/10 flex-shrink-0 flex gap-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Pergunte sobre suas finanças..."
-              className="rounded-xl h-10 flex-1 text-sm"
-              disabled={loading}
-            />
-            <Button
-              onClick={handleSend}
-              disabled={loading || !input.trim()}
-              size="icon"
-              className="h-10 w-10 rounded-xl flex-shrink-0"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
         </DialogContent>
       </Dialog>
     </>
