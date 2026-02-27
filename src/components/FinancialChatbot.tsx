@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MessageCircle, Send, X, Bot, User, Loader2 } from 'lucide-react';
-import { financialAssistantChat } from '@/ai/flows/financial-assistant-chat';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Message {
@@ -44,20 +43,9 @@ export function FinancialChatbot({ userId }: Props) {
     setLoading(true);
 
     try {
-      const result = await financialAssistantChat({
-        message: userMessage,
-        userId,
-        currentDate: new Date().toISOString().split('T')[0],
-      });
-      if (!result?.response) {
-        console.warn('[FinancialChatbot] Server action returned empty response', {
-          hasResult: !!result,
-          responseType: typeof result?.response,
-        });
-      }
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', text: result?.response || 'Desculpe, não consegui processar sua pergunta. Tente novamente.' },
+        { role: 'assistant', text: 'Desculpe, o assistente de chat está sendo atualizado. Tente novamente em breve.' },
       ]);
     } catch (err) {
       console.error(err);
