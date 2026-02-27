@@ -1,4 +1,3 @@
-'use server';
 /**
  * @fileOverview Financial data query functions.
  * Provides direct async functions to query user financial data from Supabase.
