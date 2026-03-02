@@ -2,6 +2,7 @@
 "use client"
 
 import React, { useState, useMemo } from 'react';
+import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { 
   ArrowUpCircle, 
@@ -52,6 +53,7 @@ interface Props {
 }
 
 export function TransactionList({ transactions, recurring, categories, cards, onDelete, onUpdate, onDeleteByPeriod }: Props) {
+  const today = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
   const [searchTerm, setSearchTerm] = useState('');
   const [monthFilter, setMonthFilter] = useState<string>((new Date().getMonth() + 1).toString().padStart(2, '0'));
   const [yearFilter, setYearFilter] = useState<string>(new Date().getFullYear().toString());
@@ -267,7 +269,15 @@ export function TransactionList({ transactions, recurring, categories, cards, on
         <div className="space-y-4">
           {statementType === 'cash' ? (
             cashStatement.length > 0 ? cashStatement.map((tx) => (
-              <div key={tx.id} className={`flex items-center justify-between p-4 rounded-2xl bg-white/40 hover:bg-white/80 transition-all border border-transparent hover:border-primary/10 group relative ${tx.isVirtual ? 'opacity-60 border-dashed border-primary/20 bg-primary/[0.02]' : ''}`}>
+              <div key={tx.id} className={`flex items-center justify-between p-4 rounded-2xl transition-all border group relative ${
+                tx.date === today
+                  ? tx.isVirtual
+                    ? 'bg-amber-50/30 opacity-60 border-dashed border-amber-300'
+                    : 'bg-amber-50/70 border-amber-300 hover:bg-amber-50'
+                  : tx.isVirtual
+                    ? 'opacity-60 border-dashed border-primary/20 bg-primary/[0.02]'
+                    : 'bg-white/40 hover:bg-white/80 border-transparent hover:border-primary/10'
+              }`}>
                 <div className="flex items-center gap-4">
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${
                     tx.type === 'income' || tx.type === 'savings_withdrawal' ? 'bg-green-100 text-green-600' : 
@@ -332,7 +342,7 @@ export function TransactionList({ transactions, recurring, categories, cards, on
             )
           ) : (
             creditStatement.length > 0 ? creditStatement.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/40 hover:bg-white/80 transition-all border border-transparent hover:border-primary/10 group relative">
+              <div key={tx.id} className={`flex items-center justify-between p-4 rounded-2xl transition-all border group relative ${tx.date === today ? 'bg-amber-50/70 border-amber-300 hover:bg-amber-50' : 'bg-white/40 hover:bg-white/80 border-transparent hover:border-primary/10'}`}>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-accent/10 text-accent transition-transform group-hover:scale-110">
                     <CreditCardIcon className="w-6 h-6" />
