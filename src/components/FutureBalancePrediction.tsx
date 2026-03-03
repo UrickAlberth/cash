@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Transaction, RecurringExpense, CreditCard } from '@/lib/types';
+import { cn } from '@/lib/utils';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { 
   CalendarIcon, 
@@ -103,6 +104,10 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [detailsDay, setDetailsDay] = useState<number | null>(null);
+  const today = useMemo(() => new Date(), []);
+  const todayDay = today.getDate();
+  const todayMonth = today.getMonth();
+  const todayYear = today.getFullYear();
 
   const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
   
@@ -323,9 +328,11 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dailyData.map((row) => (
-                  <TableRow key={row.day} className="hover:bg-primary/5 cursor-pointer group" onClick={() => setDetailsDay(row.day)}>
-                    <TableCell className="font-bold text-muted-foreground">{row.day}</TableCell>
+                {dailyData.map((row) => {
+                  const isToday = row.day === todayDay && selectedMonth === todayMonth && selectedYear === todayYear;
+                  return (
+                  <TableRow key={row.day} className={cn("hover:bg-primary/5 cursor-pointer group", isToday && "bg-primary/10 border-l-4 border-primary")} onClick={() => setDetailsDay(row.day)}>
+                    <TableCell className={cn("font-bold", isToday ? "text-primary" : "text-muted-foreground")}>{row.day}</TableCell>
                     <TableCell className="text-green-600 font-medium">{row.income > 0 ? `+ R$ ${row.income.toFixed(2)}` : '-'}</TableCell>
                     <TableCell className="text-red-500 font-medium">{row.expense > 0 ? `- R$ ${row.expense.toFixed(2)}` : '-'}</TableCell>
                     <TableCell className={row.profit >= 0 ? 'text-green-600' : 'text-red-500'}>
@@ -333,7 +340,8 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
                     </TableCell>
                     <TableCell className="text-right font-bold text-primary">R$ {row.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
