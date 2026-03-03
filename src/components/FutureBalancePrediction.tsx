@@ -329,6 +329,15 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
               </TableHeader>
               <TableBody>
                 {dailyData.map((row) => {
+console.log({
+  rowDay: row.day,
+  todayDay,
+  selectedMonth,
+  todayMonth,
+  selectedYear,
+  todayYear
+});
+      
                   const isToday = row.day === todayDay && selectedMonth === todayMonth && selectedYear === todayYear;
                   return (
                   <TableRow key={row.day} className={cn("hover:bg-primary/5 cursor-pointer group", isToday && "bg-primary/10 border-l-4 border-primary")} onClick={() => setDetailsDay(row.day)}>
