@@ -60,5 +60,14 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+/* Ensure touch-friendly minimum tap targets on mobile */
+@media (max-width: 767px) {
+  button, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
   }
 }
