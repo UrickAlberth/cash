@@ -105,10 +105,18 @@ export function TransactionList({ transactions, recurring, categories, cards, on
         const startDate = new Date(rec.startDate + 'T12:00:00');
 
         if (targetDate >= startDate) {
-          const alreadyLaunched = realTx.some(t => 
-            t.description.includes(rec.description) && 
-            Math.abs(t.value - rec.value) < 0.01
-          );
+          const scheduledForKey = `${yearFilter}-${monthFilter}`;
+          const alreadyLaunched =
+            realTx.some(t =>
+              t.description.includes(rec.description) &&
+              Math.abs(t.value - rec.value) < 0.01
+            ) ||
+            transactions.some(t =>
+              !t.isVirtual &&
+              t.scheduledFor === scheduledForKey &&
+              t.description.includes(rec.description) &&
+              Math.abs(t.value - rec.value) < 0.01
+            );
 
           if (!alreadyLaunched) {
             virtualTx.push({

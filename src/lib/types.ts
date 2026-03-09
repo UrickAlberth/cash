@@ -30,6 +30,7 @@ export interface Transaction {
   isRecurring?: boolean;
   isVirtual?: boolean; // Para identificar projeções no extrato
   isPaid?: boolean; // Novo campo para controle de pagamento
+  scheduledFor?: string; // Formato YYYY-MM: mês de competência quando antecipado de outro mês
 }
 
 export interface RecurringExpense {
