@@ -19,8 +19,7 @@ import {
   CalendarDays,
   XCircle,
   ReceiptText,
-  History,
-  FastForward
+  History
 } from 'lucide-react';
 import { Transaction, Category, RecurringExpense, CreditCard } from '@/lib/types';
 import { Input } from '@/components/ui/input';
@@ -51,10 +50,9 @@ interface Props {
   onDelete: (id: string, deleteMode: 'single' | 'all') => void;
   onUpdate: (transaction: Transaction) => void;
   onDeleteByPeriod?: (month: string, year: string) => void;
-  onAnticipate?: (tx: Transaction, newDate: string) => void;
 }
 
-export function TransactionList({ transactions, recurring, categories, cards, onDelete, onUpdate, onDeleteByPeriod, onAnticipate }: Props) {
+export function TransactionList({ transactions, recurring, categories, cards, onDelete, onUpdate, onDeleteByPeriod }: Props) {
   const today = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
   const [searchTerm, setSearchTerm] = useState('');
   const [monthFilter, setMonthFilter] = useState<string>((new Date().getMonth() + 1).toString().padStart(2, '0'));
@@ -64,8 +62,6 @@ export function TransactionList({ transactions, recurring, categories, cards, on
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [statementType, setStatementType] = useState<'cash' | 'credit'>('cash');
   const [cardFilter, setCardFilter] = useState<string>('all');
-  const [anticipatingTx, setAnticipatingTx] = useState<Transaction | null>(null);
-  const [anticipateDate, setAnticipateDate] = useState('');
 
   const months = [
     { value: 'all', label: 'Todos os meses' },
@@ -106,7 +102,8 @@ export function TransactionList({ transactions, recurring, categories, cards, on
         if (targetDate >= startDate) {
           const alreadyLaunched = realTx.some(t => 
             t.description.includes(rec.description) && 
-            Math.abs(t.value - rec.value) < 0.01
+            Math.abs(t.value - rec.value) < 0.01 &&
+            t.date === dateStr
           );
 
           if (!alreadyLaunched) {
@@ -141,8 +138,7 @@ export function TransactionList({ transactions, recurring, categories, cards, on
         });
 
         const total = billTransactions.reduce((acc, t) => acc + t.value, 0);
-        const allPaid = billTransactions.length > 0 && billTransactions.every(t => t.isPaid);
-        if (total > 0 && !allPaid) {
+        if (total > 0) {
           const dateStr = `${targetYear}-${monthFilter}-${String(card.dueDay).padStart(2, '0')}`;
           virtualTx.push({
             id: `bill-summary-${card.id}-${targetMonth}-${targetYear}`,
@@ -153,8 +149,7 @@ export function TransactionList({ transactions, recurring, categories, cards, on
             subcategory: 'Fatura',
             type: 'expense',
             isVirtual: true,
-            isRecurring: false,
-            cardId: card.id
+            isRecurring: false
           });
         }
       });
@@ -338,22 +333,6 @@ export function TransactionList({ transactions, recurring, categories, cards, on
                       </Button>
                     </div>
                   )}
-                  {tx.isVirtual && onAnticipate && (
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-9 w-9 text-amber-600 hover:bg-amber-100 rounded-xl"
-                        title="Antecipar lançamento"
-                        onClick={() => {
-                          setAnticipatingTx(tx);
-                          setAnticipateDate(format(new Date(), 'yyyy-MM-dd'));
-                        }}
-                      >
-                        <FastForward className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
                 </div>
               </div>
             )) : (
@@ -526,59 +505,6 @@ export function TransactionList({ transactions, recurring, categories, cards, on
               </DialogFooter>
             </form>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Anticipate Dialog */}
-      <Dialog open={!!anticipatingTx} onOpenChange={() => setAnticipatingTx(null)}>
-        <DialogContent className="sm:max-w-[425px] bg-white rounded-3xl">
-          <DialogHeader>
-            <DialogTitle className="text-amber-600 flex items-center gap-2">
-              <FastForward className="w-5 h-5" /> Antecipar Lançamento
-            </DialogTitle>
-            <DialogDescription className="py-1">
-              Escolha uma data anterior para registrar este lançamento como definitivo, removendo-o dos agendados.
-            </DialogDescription>
-          </DialogHeader>
-          {anticipatingTx && (
-            <div className="space-y-4 py-2">
-              <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                <p className="font-bold text-sm text-gray-800">{anticipatingTx.description}</p>
-                <p className="text-sm font-bold text-primary">
-                  R$ {anticipatingTx.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">Agendado para: {anticipatingTx.date}</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Nova Data</Label>
-                <Input
-                  type="date"
-                  className="rounded-xl"
-                  value={anticipateDate}
-                  max={anticipatingTx.date}
-                  onChange={(e) => setAnticipateDate(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">A data deve ser anterior ou igual à data agendada.</p>
-              </div>
-            </div>
-          )}
-          <DialogFooter className="flex gap-2 pt-2">
-            <Button variant="ghost" onClick={() => setAnticipatingTx(null)} className="rounded-xl flex-1">
-              Cancelar
-            </Button>
-            <Button
-              className="rounded-xl flex-1 bg-amber-500 hover:bg-amber-600 text-white"
-              onClick={() => {
-                if (anticipatingTx && anticipateDate && onAnticipate) {
-                  onAnticipate(anticipatingTx, anticipateDate);
-                  setAnticipatingTx(null);
-                }
-              }}
-              disabled={!anticipateDate}
-            >
-              <FastForward className="w-4 h-4 mr-2" /> Antecipar
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Card>
