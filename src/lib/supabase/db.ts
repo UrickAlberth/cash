@@ -24,6 +24,7 @@ export async function fetchTransactions(userId: string): Promise<Transaction[]> 
     isRecurring: row.is_recurring ?? false,
     isVirtual: row.is_virtual ?? false,
     isPaid: row.is_paid ?? false,
+    scheduledFor: row.scheduled_for ?? undefined,
   }));
 }
 
@@ -44,6 +45,7 @@ export async function insertTransaction(userId: string, tx: Omit<Transaction, 'i
       is_recurring: tx.isRecurring ?? false,
       is_virtual: tx.isVirtual ?? false,
       is_paid: tx.isPaid ?? false,
+      scheduled_for: tx.scheduledFor ?? null,
     })
     .select()
     .single();
@@ -62,6 +64,7 @@ export async function insertTransaction(userId: string, tx: Omit<Transaction, 'i
     isRecurring: data.is_recurring ?? false,
     isVirtual: data.is_virtual ?? false,
     isPaid: data.is_paid ?? false,
+    scheduledFor: data.scheduled_for ?? undefined,
   };
 }
 
@@ -83,6 +86,7 @@ export async function upsertTransaction(userId: string, tx: Transaction): Promis
       is_recurring: tx.isRecurring ?? false,
       is_virtual: tx.isVirtual ?? false,
       is_paid: tx.isPaid ?? false,
+      scheduled_for: tx.scheduledFor ?? null,
     });
   if (error) throw error;
 }

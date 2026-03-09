@@ -56,6 +56,7 @@ create table if not exists public.transactions (
   is_recurring boolean not null default false,
   is_virtual boolean not null default false,
   is_paid boolean not null default false,
+  scheduled_for text, -- YYYY-MM: competência original quando antecipado de outro mês
   created_at timestamptz not null default now()
 );
 
