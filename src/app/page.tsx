@@ -420,13 +420,14 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
     } catch { toast({ title: 'Erro ao excluir', variant: 'destructive' }); }
   }, [userId]);
 
-  const anticipateTransaction = useCallback(async (tx: Transaction, newDate: string) => {
+  const anticipateTransaction = useCallback(async (tx: Transaction, newDate: string, newValue?: number) => {
     try {
+      const finalValue = newValue !== undefined ? newValue : tx.value;
       if (tx.cardId && tx.category === 'Cartão de Crédito') {
         // It's a credit card bill summary — create a real expense and mark bill transactions as paid
         const txPayload: Omit<Transaction, 'id'> = {
           description: tx.description,
-          value: tx.value,
+          value: finalValue,
           date: newDate,
           type: 'expense',
           category: 'Cartão de Crédito',
@@ -465,7 +466,7 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
         // It's a recurring virtual transaction — create a real transaction with the new date
         const txPayload: Omit<Transaction, 'id'> = {
           description: tx.description,
-          value: tx.value,
+          value: finalValue,
           date: newDate,
           type: tx.type,
           category: tx.category,
@@ -475,9 +476,9 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
         };
         const created = await insertTransaction(userId, txPayload);
         setTransactions(prev => [created, ...prev]);
-        toast({ title: 'Lançamento antecipado!', description: 'O agendamento foi registrado como definitivo.' });
+        toast({ title: 'Lançamento registrado!', description: 'O agendamento foi registrado como definitivo.' });
       }
-    } catch { toast({ title: 'Erro ao antecipar', variant: 'destructive' }); }
+    } catch { toast({ title: 'Erro ao registrar', variant: 'destructive' }); }
   }, [userId, transactions, cards]);
 
   if (dataLoading) {

@@ -51,7 +51,7 @@ interface Props {
   onDelete: (id: string, deleteMode: 'single' | 'all') => void;
   onUpdate: (transaction: Transaction) => void;
   onDeleteByPeriod?: (month: string, year: string) => void;
-  onAnticipate?: (tx: Transaction, newDate: string) => void;
+  onAnticipate?: (tx: Transaction, newDate: string, newValue?: number) => void;
 }
 
 export function TransactionList({ transactions, recurring, categories, cards, onDelete, onUpdate, onDeleteByPeriod, onAnticipate }: Props) {
@@ -66,6 +66,7 @@ export function TransactionList({ transactions, recurring, categories, cards, on
   const [cardFilter, setCardFilter] = useState<string>('all');
   const [anticipatingTx, setAnticipatingTx] = useState<Transaction | null>(null);
   const [anticipateDate, setAnticipateDate] = useState('');
+  const [anticipateValue, setAnticipateValue] = useState<number | ''>('');
 
   const months = [
     { value: 'all', label: 'Todos os meses' },
@@ -348,6 +349,7 @@ export function TransactionList({ transactions, recurring, categories, cards, on
                         onClick={() => {
                           setAnticipatingTx(tx);
                           setAnticipateDate(format(new Date(), 'yyyy-MM-dd'));
+                          setAnticipateValue(tx.value);
                         }}
                       >
                         <FastForward className="w-4 h-4" />
@@ -529,15 +531,15 @@ export function TransactionList({ transactions, recurring, categories, cards, on
         </DialogContent>
       </Dialog>
 
-      {/* Anticipate Dialog */}
+      {/* Anticipate / Postpone Dialog */}
       <Dialog open={!!anticipatingTx} onOpenChange={() => setAnticipatingTx(null)}>
         <DialogContent className="sm:max-w-[425px] bg-white rounded-3xl">
           <DialogHeader>
             <DialogTitle className="text-amber-600 flex items-center gap-2">
-              <FastForward className="w-5 h-5" /> Antecipar Lançamento
+              <FastForward className="w-5 h-5" /> Antecipar / Adiar Lançamento
             </DialogTitle>
             <DialogDescription className="py-1">
-              Escolha uma data anterior para registrar este lançamento como definitivo, removendo-o dos agendados.
+              Escolha uma nova data e, se necessário, ajuste o valor. Datas anteriores antecipam e datas posteriores adiam o lançamento.
             </DialogDescription>
           </DialogHeader>
           {anticipatingTx && (
@@ -555,10 +557,22 @@ export function TransactionList({ transactions, recurring, categories, cards, on
                   type="date"
                   className="rounded-xl"
                   value={anticipateDate}
-                  max={anticipatingTx.date}
                   onChange={(e) => setAnticipateDate(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">A data deve ser anterior ou igual à data agendada.</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Valor (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="rounded-xl"
+                  value={anticipateValue}
+                  onChange={(e) => {
+                    const parsed = parseFloat(e.target.value);
+                    setAnticipateValue(e.target.value === '' || isNaN(parsed) ? '' : parsed);
+                  }}
+                />
               </div>
             </div>
           )}
@@ -570,13 +584,13 @@ export function TransactionList({ transactions, recurring, categories, cards, on
               className="rounded-xl flex-1 bg-amber-500 hover:bg-amber-600 text-white"
               onClick={() => {
                 if (anticipatingTx && anticipateDate && onAnticipate) {
-                  onAnticipate(anticipatingTx, anticipateDate);
+                  onAnticipate(anticipatingTx, anticipateDate, anticipateValue !== '' ? anticipateValue : undefined);
                   setAnticipatingTx(null);
                 }
               }}
-              disabled={!anticipateDate}
+              disabled={!anticipateDate || anticipateValue === '' || typeof anticipateValue !== 'number' || anticipateValue <= 0}
             >
-              <FastForward className="w-4 h-4 mr-2" /> Antecipar
+              <FastForward className="w-4 h-4 mr-2" /> Confirmar
             </Button>
           </DialogFooter>
         </DialogContent>
