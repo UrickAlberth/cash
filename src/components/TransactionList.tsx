@@ -50,9 +50,10 @@ interface Props {
   onDelete: (id: string, deleteMode: 'single' | 'all') => void;
   onUpdate: (transaction: Transaction) => void;
   onDeleteByPeriod?: (month: string, year: string) => void;
+  onReschedule?: (tx: Transaction, newDate: string, newValue: number) => void;
 }
 
-export function TransactionList({ transactions, recurring, categories, cards, onDelete, onUpdate, onDeleteByPeriod }: Props) {
+export function TransactionList({ transactions, recurring, categories, cards, onDelete, onUpdate, onDeleteByPeriod, onReschedule }: Props) {
   const today = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
   const [searchTerm, setSearchTerm] = useState('');
   const [monthFilter, setMonthFilter] = useState<string>((new Date().getMonth() + 1).toString().padStart(2, '0'));
@@ -62,6 +63,9 @@ export function TransactionList({ transactions, recurring, categories, cards, on
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [statementType, setStatementType] = useState<'cash' | 'credit'>('cash');
   const [cardFilter, setCardFilter] = useState<string>('all');
+  const [reschedulingTx, setReschedulingTx] = useState<Transaction | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleValue, setRescheduleValue] = useState<number>(0);
 
   const months = [
     { value: 'all', label: 'Todos os meses' },
@@ -106,7 +110,18 @@ export function TransactionList({ transactions, recurring, categories, cards, on
             t.date === dateStr
           );
 
-          if (!alreadyLaunched) {
+          // Check if this occurrence was rescheduled:
+          // (a) moved away from this month (scheduledFor points to this month)
+          // (b) an occurrence from another month was moved INTO this month (has scheduledFor and date is in this month)
+          const wasRescheduled = transactions.some(t =>
+            t.description === rec.description &&
+            (
+              t.scheduledFor === `${targetYear}-${monthFilter}` ||
+              (t.date.startsWith(`${targetYear}-${monthFilter}`) && !!t.scheduledFor)
+            )
+          );
+
+          if (!alreadyLaunched && !wasRescheduled) {
             virtualTx.push({
               id: `v-${rec.id}-${targetMonth}-${targetYear}`,
               description: rec.description,
@@ -333,6 +348,23 @@ export function TransactionList({ transactions, recurring, categories, cards, on
                       </Button>
                     </div>
                   )}
+                  {tx.isVirtual && !tx.id.startsWith('bill-summary-') && onReschedule && (
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9 text-primary hover:bg-primary/10 rounded-xl"
+                        title="Reagendar lançamento"
+                        onClick={() => {
+                          setReschedulingTx(tx);
+                          setRescheduleDate(tx.date);
+                          setRescheduleValue(tx.value);
+                        }}
+                      >
+                        <CalendarDays className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             )) : (
@@ -504,6 +536,71 @@ export function TransactionList({ transactions, recurring, categories, cards, on
                 <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl h-12">Salvar Alterações</Button>
               </DialogFooter>
             </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Reschedule Dialog */}
+      <Dialog open={!!reschedulingTx} onOpenChange={() => setReschedulingTx(null)}>
+        <DialogContent className="sm:max-w-[425px] bg-white/95 backdrop-blur-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-primary font-headline flex items-center gap-2">
+              <CalendarDays className="w-5 h-5" /> Reagendar Lançamento
+            </DialogTitle>
+            <DialogDescription className="py-1">
+              Antecipe ou adie este lançamento para uma nova data. Você também pode alterar o valor.
+            </DialogDescription>
+          </DialogHeader>
+          {reschedulingTx && (
+            <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nova Data</Label>
+                  <Input
+                    type="date"
+                    className="rounded-xl"
+                    value={rescheduleDate}
+                    onChange={(e) => setRescheduleDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Novo Valor (R$)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    className="rounded-xl"
+                    value={rescheduleValue}
+                    onChange={(e) => setRescheduleValue(parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
+              {rescheduleDate && (
+                rescheduleDate <= today ? (
+                  <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-xl px-3 py-2">
+                    📅 Esta data é hoje ou no passado. O lançamento será registrado como <strong>efetivo</strong> e deixará de aparecer como agendado.
+                  </p>
+                ) : (
+                  <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2">
+                    🗓️ Esta data é no futuro. O lançamento continuará <strong>agendado</strong> na nova data.
+                  </p>
+                )
+              )}
+              <DialogFooter className="pt-2">
+                <Button variant="ghost" onClick={() => setReschedulingTx(null)} className="rounded-xl flex-1">Cancelar</Button>
+                <Button
+                  className="rounded-xl flex-1 bg-primary hover:bg-primary/90 text-white"
+                  disabled={!rescheduleDate || rescheduleValue <= 0}
+                  onClick={() => {
+                    if (reschedulingTx && rescheduleDate && rescheduleValue > 0) {
+                      onReschedule?.(reschedulingTx, rescheduleDate, rescheduleValue);
+                      setReschedulingTx(null);
+                    }
+                  }}
+                >
+                  Confirmar
+                </Button>
+              </DialogFooter>
+            </div>
           )}
         </DialogContent>
       </Dialog>
