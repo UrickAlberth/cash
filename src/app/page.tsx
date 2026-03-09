@@ -345,6 +345,69 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
     } catch { toast({ title: 'Erro ao atualizar', variant: 'destructive' }); }
   }, [userId]);
 
+  const rescheduleVirtualTransaction = useCallback(async (tx: Transaction, newDate: string, newValue: number) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isAnticipation = newDate <= todayStr;
+
+    if (tx.id.startsWith('v-')) {
+      // Generated virtual from a recurring rule: v-{uuid}-{month0based}-{year}
+      // UUID format: 8-4-4-4-12 hex chars (always 5 hyphen-separated segments)
+      const match = tx.id.match(
+        /^v-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-(\d+)-(\d+)$/
+      );
+      if (!match) {
+        toast({ title: 'Erro ao reagendar', description: 'ID de agendamento inválido.', variant: 'destructive' });
+        return;
+      }
+      const targetYear = match[3];
+      const targetMonthNum = parseInt(match[2]); // 0-based
+      const targetMonthStr = String(targetMonthNum + 1).padStart(2, '0'); // 1-based, padded
+      const scheduledFor = `${targetYear}-${targetMonthStr}`;
+
+      const txPayload: Omit<Transaction, 'id'> = {
+        description: tx.description,
+        value: Number(newValue.toFixed(2)),
+        date: newDate,
+        type: tx.type,
+        category: tx.category,
+        subcategory: tx.subcategory,
+        isRecurring: false,
+        isVirtual: !isAnticipation,
+        isPaid: false,
+        scheduledFor,
+      };
+
+      try {
+        const created = await insertTransaction(userId, txPayload);
+        setTransactions(prev => [created, ...prev]);
+        toast({
+          title: isAnticipation ? 'Lançamento Antecipado' : 'Lançamento Adiado',
+          description: isAnticipation
+            ? 'Registrado como lançamento efetivo na nova data.'
+            : 'Agendamento atualizado para a nova data.',
+        });
+      } catch { toast({ title: 'Erro ao reagendar', variant: 'destructive' }); }
+    } else {
+      // Stored virtual transaction (previously postponed): update in place
+      const updated: Transaction = {
+        ...tx,
+        date: newDate,
+        value: Number(newValue.toFixed(2)),
+        isVirtual: !isAnticipation,
+      };
+      try {
+        await upsertTransaction(userId, updated);
+        setTransactions(prev => prev.map(t => t.id === updated.id ? updated : t));
+        toast({
+          title: isAnticipation ? 'Lançamento Antecipado' : 'Lançamento Adiado',
+          description: isAnticipation
+            ? 'Registrado como lançamento efetivo na nova data.'
+            : 'Agendamento atualizado para a nova data.',
+        });
+      } catch { toast({ title: 'Erro ao reagendar', variant: 'destructive' }); }
+    }
+  }, [userId]);
+
   const togglePaid = useCallback(async (id: string) => {
     const tx = transactions.find(t => t.id === id);
     if (!tx) return;
@@ -489,6 +552,7 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
               onDelete={deleteTransaction} 
               onUpdate={updateTransaction}
               onDeleteByPeriod={deleteByPeriod}
+              onReschedule={rescheduleVirtualTransaction}
             />
           </TabsContent>
 
