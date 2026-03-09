@@ -78,23 +78,23 @@ export function TransactionForm({ categories, cards, onAdd, onAddCategory }: Pro
 
   return (
     <Card className="border-none shadow-xl bg-white/50 backdrop-blur-sm">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <CardTitle className="flex items-center gap-2 font-headline text-primary">
           <Plus className="w-5 h-5" /> Novo Lançamento
         </CardTitle>
-        <div className="flex items-center space-x-2 bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10">
+        <div className="flex items-center space-x-2 bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10 self-start sm:self-auto">
           <Label htmlFor="recurring" className="text-[10px] font-bold text-primary uppercase">Conta Fixa?</Label>
           <Switch id="recurring" checked={isRecurring} onCheckedChange={setIsRecurring} disabled={type === 'credit_card'} />
         </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             <Button type="button" variant={type === 'income' ? 'default' : 'outline'} className="rounded-2xl h-12 text-xs" onClick={() => setType('income')}><ArrowUpCircle className="w-3 h-3 mr-1" /> Entrada</Button>
             <Button type="button" variant={type === 'expense' ? 'default' : 'outline'} className="rounded-2xl h-12 text-xs" onClick={() => setType('expense')}><ArrowDownCircle className="w-3 h-3 mr-1" /> Saída</Button>
             <Button type="button" variant={type === 'credit_card' ? 'default' : 'outline'} className="rounded-2xl h-12 text-xs" onClick={() => setType('credit_card')}><CardIcon className="w-3 h-3 mr-1" /> Cartão</Button>
             <Button type="button" variant={type === 'savings' ? 'default' : 'outline'} className="rounded-2xl h-12 text-xs" onClick={() => setType('savings')}><PiggyBank className="w-3 h-3 mr-1" /> Guardar</Button>
-            <Button type="button" variant={type === 'savings_withdrawal' ? 'default' : 'outline'} className="rounded-2xl h-12 text-xs" onClick={() => setType('savings_withdrawal')}><Wallet className="w-3 h-3 mr-1" /> Resgatar</Button>
+            <Button type="button" variant={type === 'savings_withdrawal' ? 'default' : 'outline'} className="rounded-2xl h-12 text-xs col-span-2 md:col-span-1" onClick={() => setType('savings_withdrawal')}><Wallet className="w-3 h-3 mr-1" /> Resgatar</Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

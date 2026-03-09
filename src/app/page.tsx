@@ -496,14 +496,14 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
       <style>{dynamicStyles}</style>
       <Toaster />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <header className="flex items-center justify-between mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <header className="flex items-center justify-between mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30">
               <Heart className="text-white w-7 h-7 fill-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-primary font-headline tracking-tight">RosaCash</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-primary font-headline tracking-tight">RosaCash</h1>
               <p className="text-sm text-muted-foreground font-medium">Finanças Inteligentes</p>
             </div>
           </div>
@@ -523,16 +523,31 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
           </div>
         </header>
 
+        {/* Mobile-only summary bar */}
+        <div className="flex md:hidden items-center gap-3 mb-6 bg-white/50 backdrop-blur-sm p-3 rounded-2xl border border-white/50">
+          <div className="flex-1 text-center">
+            <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-tighter">Poupança</p>
+            <p className="text-sm font-bold text-primary">R$ {summary.totalSavings.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+          </div>
+          <div className="w-px h-8 bg-primary/10" />
+          <div className="flex-1 text-center">
+            <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-tighter">Saldo Hoje</p>
+            <p className="text-sm font-bold text-accent">R$ {summary.netProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+          </div>
+          <div className="w-px h-8 bg-primary/10" />
+          <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-destructive shrink-0" title="Sair" onClick={() => onSignOut().catch(() => {})}><LogOut className="w-4 h-4" /></Button>
+        </div>
+
         <Tabs defaultValue="dashboard" className="space-y-8">
-          <TabsList className="grid grid-cols-4 md:grid-cols-8 w-full md:w-full h-auto bg-white/50 backdrop-blur-sm p-1 rounded-2xl border border-white/50 shadow-sm overflow-x-auto gap-1">
-            <TabsTrigger value="dashboard" className="rounded-xl py-2 px-1"><LayoutDashboard className="w-4 h-4 md:mr-2" /><span className="hidden md:inline">Dashboard</span></TabsTrigger>
-            <TabsTrigger value="transactions" className="rounded-xl py-2 px-1"><PlusCircle className="w-4 h-4 md:mr-2" /><span className="hidden md:inline">Lançar</span></TabsTrigger>
-            <TabsTrigger value="history" className="rounded-xl py-2 px-1"><History className="w-4 h-4 md:mr-2" /><span className="hidden md:inline">Extrato</span></TabsTrigger>
-            <TabsTrigger value="payable" className="rounded-xl py-2 px-1"><CheckCircle2 className="w-4 h-4 md:mr-2" /><span className="hidden md:inline">Pagar</span></TabsTrigger>
-            <TabsTrigger value="cards" className="rounded-xl py-2 px-1"><CardIcon className="w-4 h-4 md:mr-2" /><span className="hidden md:inline">Cartões</span></TabsTrigger>
-            <TabsTrigger value="prediction" className="rounded-xl py-2 px-1"><TrendingUp className="w-4 h-4 md:mr-2" /><span className="hidden md:inline">Previsão</span></TabsTrigger>
-            <TabsTrigger value="recurring" className="rounded-xl py-2 px-1"><ListRestart className="w-4 h-4 md:mr-2" /><span className="hidden md:inline">Fixas</span></TabsTrigger>
-            <TabsTrigger value="settings" className="rounded-xl py-2 px-1"><Settings className="w-4 h-4 md:mr-2" /><span className="hidden md:inline">Ajustes</span></TabsTrigger>
+          <TabsList className="grid grid-cols-4 md:grid-cols-8 w-full h-auto bg-white/50 backdrop-blur-sm p-1 rounded-2xl border border-white/50 shadow-sm gap-1">
+            <TabsTrigger value="dashboard" className="rounded-xl py-2 px-1 flex-col sm:flex-row gap-0.5 sm:gap-1"><LayoutDashboard className="w-4 h-4" /><span className="text-[9px] sm:text-xs md:hidden">Início</span><span className="hidden md:inline">Dashboard</span></TabsTrigger>
+            <TabsTrigger value="transactions" className="rounded-xl py-2 px-1 flex-col sm:flex-row gap-0.5 sm:gap-1"><PlusCircle className="w-4 h-4" /><span className="text-[9px] sm:text-xs md:hidden">Lançar</span><span className="hidden md:inline">Lançar</span></TabsTrigger>
+            <TabsTrigger value="history" className="rounded-xl py-2 px-1 flex-col sm:flex-row gap-0.5 sm:gap-1"><History className="w-4 h-4" /><span className="text-[9px] sm:text-xs md:hidden">Extrato</span><span className="hidden md:inline">Extrato</span></TabsTrigger>
+            <TabsTrigger value="payable" className="rounded-xl py-2 px-1 flex-col sm:flex-row gap-0.5 sm:gap-1"><CheckCircle2 className="w-4 h-4" /><span className="text-[9px] sm:text-xs md:hidden">Pagar</span><span className="hidden md:inline">Pagar</span></TabsTrigger>
+            <TabsTrigger value="cards" className="rounded-xl py-2 px-1 flex-col sm:flex-row gap-0.5 sm:gap-1"><CardIcon className="w-4 h-4" /><span className="text-[9px] sm:text-xs md:hidden">Cartões</span><span className="hidden md:inline">Cartões</span></TabsTrigger>
+            <TabsTrigger value="prediction" className="rounded-xl py-2 px-1 flex-col sm:flex-row gap-0.5 sm:gap-1"><TrendingUp className="w-4 h-4" /><span className="text-[9px] sm:text-xs md:hidden">Previsão</span><span className="hidden md:inline">Previsão</span></TabsTrigger>
+            <TabsTrigger value="recurring" className="rounded-xl py-2 px-1 flex-col sm:flex-row gap-0.5 sm:gap-1"><ListRestart className="w-4 h-4" /><span className="text-[9px] sm:text-xs md:hidden">Fixas</span><span className="hidden md:inline">Fixas</span></TabsTrigger>
+            <TabsTrigger value="settings" className="rounded-xl py-2 px-1 flex-col sm:flex-row gap-0.5 sm:gap-1"><Settings className="w-4 h-4" /><span className="text-[9px] sm:text-xs md:hidden">Ajustes</span><span className="hidden md:inline">Ajustes</span></TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -573,7 +588,7 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
               <CardHeader><CardTitle>Contas Fixas Mensais</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {recurring.length > 0 ? recurring.map(r => (
-                  <div key={r.id} className="p-4 rounded-xl border bg-white flex justify-between items-center group relative overflow-hidden">
+                  <div key={r.id} className="p-4 rounded-xl border bg-white flex flex-wrap justify-between items-center gap-2 group relative overflow-hidden">
                     <div className="absolute inset-y-0 left-0 w-1 bg-primary/20" />
                     <div>
                       <p className="font-bold">{r.description}</p>
@@ -581,7 +596,7 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
                     </div>
                     <div className="flex items-center gap-3">
                       <p className={`font-bold ${r.type === 'income' || r.type === 'savings_withdrawal' ? 'text-green-600' : 'text-primary'}`}>R$ {r.value.toFixed(2)}</p>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                          <Button size="icon" variant="ghost" className="h-8 w-8 text-primary" onClick={() => setEditingRec(r)}><Edit2 className="w-3 h-3" /></Button>
                          <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => deleteRecurring(r.id)}><Trash2 className="w-3 h-3" /></Button>
                       </div>

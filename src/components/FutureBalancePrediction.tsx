@@ -317,6 +317,7 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
         </CardHeader>
         <CardContent className="p-0">
           <div className="max-h-[500px] overflow-auto">
+            <div className="min-w-[480px]">
             <Table>
               <TableHeader className="bg-primary/5">
                 <TableRow>
@@ -344,6 +345,7 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
                 })}
               </TableBody>
             </Table>
+            </div>
           </div>
         </CardContent>
       </Card>

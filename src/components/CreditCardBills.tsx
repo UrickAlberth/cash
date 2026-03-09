@@ -83,9 +83,9 @@ export function CreditCardBills({ cards, transactions }: Props) {
     <div className="space-y-6">
       {cards.map(card => (
         <Card key={card.id} className="border-none shadow-xl bg-white/60 backdrop-blur-md">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ backgroundColor: card.color }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg flex-shrink-0" style={{ backgroundColor: card.color }}>
                 <CardIcon className="w-5 h-5" />
               </div>
               <div>
@@ -93,7 +93,7 @@ export function CreditCardBills({ cards, transactions }: Props) {
                 <p className="text-xs text-muted-foreground">Fecha dia {card.closingDay} • Vence dia {card.dueDay}</p>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right">
               <p className="text-[10px] uppercase font-bold text-muted-foreground">Limite Total</p>
               <p className="font-bold text-primary">R$ {card.limit.toLocaleString('pt-BR')}</p>
             </div>

@@ -145,16 +145,16 @@ export function AccountsPayable({ transactions, cards, onTogglePaid, onToggleBil
 
       <Card className="border-none shadow-xl bg-white/60 backdrop-blur-md">
         <CardHeader className="pb-2">
-          <div className="flex justify-between items-end">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
             <div>
               <CardTitle className="text-primary font-headline flex items-center gap-2">
                 <TrendingDown className="w-5 h-5" /> Checklist de {monthNames[currentMonth]}
               </CardTitle>
               <p className="text-xs text-muted-foreground mt-1">As faturas consolidam todos os gastos individuais do cartão.</p>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right w-full sm:w-auto">
               <p className="text-[10px] font-bold text-muted-foreground uppercase">{percentPaid.toFixed(0)}% Quitado</p>
-              <Progress value={percentPaid} className="w-32 h-2 mt-1" />
+              <Progress value={percentPaid} className="w-full sm:w-32 h-2 mt-1" />
             </div>
           </div>
         </CardHeader>
@@ -163,14 +163,14 @@ export function AccountsPayable({ transactions, cards, onTogglePaid, onToggleBil
             {filteredItems.length > 0 ? filteredItems.map((item) => (
               <div 
                 key={item.id} 
-                className={`flex items-center justify-between p-4 rounded-2xl transition-all border ${
+                className={`flex items-center justify-between p-3 sm:p-4 rounded-2xl transition-all border ${
                   item.isPaid 
                     ? 'bg-green-50/30 border-green-100 opacity-60 grayscale-[0.5]' 
                     : 'bg-white border-primary/5 hover:border-primary/20 hover:shadow-md'
                 }`}
               >
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center justify-center">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="flex items-center justify-center flex-shrink-0">
                     <Checkbox 
                       id={`paid-${item.id}`} 
                       checked={item.isPaid} 
@@ -181,26 +181,26 @@ export function AccountsPayable({ transactions, cards, onTogglePaid, onToggleBil
                           onTogglePaid(item.id);
                         }
                       }}
-                      className="w-7 h-7 rounded-xl border-primary/20 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 transition-colors"
+                      className="w-6 h-6 sm:w-7 sm:h-7 rounded-xl border-primary/20 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 transition-colors"
                     />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${item.isBill ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'}`}>
-                      {item.isBill ? <CardIcon className="w-5 h-5" /> : <Receipt className="w-5 h-5" />}
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className={`p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${item.isBill ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'}`}>
+                      {item.isBill ? <CardIcon className="w-4 h-4 sm:w-5 sm:h-5" /> : <Receipt className="w-4 h-4 sm:w-5 sm:h-5" />}
                     </div>
-                    <div>
-                      <p className={`font-bold text-sm ${item.isPaid ? 'line-through text-muted-foreground' : 'text-gray-800'}`}>
+                    <div className="min-w-0">
+                      <p className={`font-bold text-sm ${item.isPaid ? 'line-through text-muted-foreground' : 'text-gray-800'} truncate`}>
                         {item.description}
                       </p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1">
                         <span className="text-[10px] font-bold text-muted-foreground uppercase">{item.category}</span>
                         <span className="text-[10px] text-muted-foreground font-medium bg-primary/5 px-2 py-0.5 rounded">Vence: {item.date.split('-')[2]}/{item.date.split('-')[1]}</span>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className={`font-bold text-lg ${item.isPaid ? 'text-muted-foreground' : 'text-primary'}`}>
+                <div className="text-right flex-shrink-0 ml-2">
+                  <p className={`font-bold text-sm sm:text-lg ${item.isPaid ? 'text-muted-foreground' : 'text-primary'}`}>
                     R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                   <p className={`text-[9px] uppercase font-bold tracking-tighter ${item.isPaid ? 'text-green-600' : 'text-accent'}`}>

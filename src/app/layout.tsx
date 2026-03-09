@@ -1,4 +1,4 @@
-import type {Metadata} from 'next';
+import type {Metadata, Viewport} from 'next';
 import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ServiceWorkerRegister from './sw-register';
@@ -6,6 +6,11 @@ import ServiceWorkerRegister from './sw-register';
 export const metadata: Metadata = {
   title: 'RosaCash - Seu Sistema Financeiro',
   description: 'Controle de entrada e saída com elegância e inteligência.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({

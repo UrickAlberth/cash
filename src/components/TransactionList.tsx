@@ -284,7 +284,7 @@ export function TransactionList({ transactions, recurring, categories, cards, on
         <div className="space-y-4">
           {statementType === 'cash' ? (
             cashStatement.length > 0 ? cashStatement.map((tx) => (
-              <div key={tx.id} className={`flex items-center justify-between p-4 rounded-2xl transition-all border group relative ${
+              <div key={tx.id} className={`flex items-center justify-between p-3 sm:p-4 rounded-2xl transition-all border group relative ${
                 tx.date === today
                   ? tx.isVirtual
                     ? 'bg-amber-50/30 opacity-60 border-dashed border-amber-300'
@@ -293,47 +293,47 @@ export function TransactionList({ transactions, recurring, categories, cards, on
                     ? 'opacity-60 border-dashed border-primary/20 bg-primary/[0.02]'
                     : 'bg-white/40 hover:bg-white/80 border-transparent hover:border-primary/10'
               }`}>
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex-shrink-0 flex items-center justify-center transition-transform group-hover:scale-110 ${
                     tx.type === 'income' || tx.type === 'savings_withdrawal' ? 'bg-green-100 text-green-600' : 
                     tx.category === 'Cartão de Crédito' ? 'bg-accent/10 text-accent' : 
                     tx.type === 'savings' ? 'bg-primary/20 text-primary' : 'bg-primary/10 text-primary'
                   }`}>
-                    {tx.type === 'income' ? <ArrowUpCircle className="w-6 h-6" /> : 
-                     tx.type === 'savings_withdrawal' ? <Wallet className="w-6 h-6" /> :
-                     tx.category === 'Cartão de Crédito' ? <ReceiptText className="w-6 h-6" /> : 
-                     tx.type === 'savings' ? <PiggyBank className="w-6 h-6" /> : <ArrowDownCircle className="w-6 h-6" />}
+                    {tx.type === 'income' ? <ArrowUpCircle className="w-5 h-5 sm:w-6 sm:h-6" /> : 
+                     tx.type === 'savings_withdrawal' ? <Wallet className="w-5 h-5 sm:w-6 sm:h-6" /> :
+                     tx.category === 'Cartão de Crédito' ? <ReceiptText className="w-5 h-5 sm:w-6 sm:h-6" /> : 
+                     tx.type === 'savings' ? <PiggyBank className="w-5 h-5 sm:w-6 sm:h-6" /> : <ArrowDownCircle className="w-5 h-5 sm:w-6 sm:h-6" />}
                   </div>
-                  <div>
-                    <p className="font-bold text-gray-800 flex items-center gap-2">
-                      {tx.description}
+                  <div className="min-w-0">
+                    <p className="font-bold text-gray-800 flex flex-wrap items-center gap-1 sm:gap-2 text-sm sm:text-base">
+                      <span className="truncate max-w-[120px] sm:max-w-none">{tx.description}</span>
                       {tx.isRecurring && (
-                        <span title="Item Recorrente" className="text-primary opacity-50"><ListRestart className="w-3 h-3" /></span>
+                        <span title="Item Recorrente" className="text-primary opacity-50 shrink-0"><ListRestart className="w-3 h-3" /></span>
                       )}
                       {tx.isVirtual && (
-                        <span className="text-[8px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-bold uppercase tracking-widest flex items-center gap-1">
+                        <span className="text-[8px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-bold uppercase tracking-widest flex items-center gap-1 shrink-0">
                           <CalendarDays className="w-2 h-2" /> {tx.category === 'Cartão de Crédito' ? 'Vencimento' : 'Agendado'}
                         </span>
                       )}
                     </p>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1">
                       <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase">{tx.category}</span>
                       <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">{tx.date}</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0 ml-2">
                   <div className="text-right">
-                    <p className={`text-lg font-bold ${tx.type === 'income' || tx.type === 'savings_withdrawal' ? 'text-green-600' : tx.type === 'savings' || tx.category === 'Cartão de Crédito' ? 'text-primary' : 'text-gray-900'}`}>
+                    <p className={`text-sm sm:text-lg font-bold ${tx.type === 'income' || tx.type === 'savings_withdrawal' ? 'text-green-600' : tx.type === 'savings' || tx.category === 'Cartão de Crédito' ? 'text-primary' : 'text-gray-900'}`}>
                       {tx.type === 'income' || tx.type === 'savings_withdrawal' ? '+' : '-'} R$ {tx.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                   </div>
                   {!tx.isVirtual && (
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                       <Button 
                         size="icon" 
                         variant="ghost" 
-                        className="h-9 w-9 text-primary hover:bg-primary/10 rounded-xl"
+                        className="h-8 w-8 sm:h-9 sm:w-9 text-primary hover:bg-primary/10 rounded-xl"
                         onClick={() => setEditingTransaction(tx)}
                       >
                         <Edit2 className="w-4 h-4" />
@@ -341,7 +341,7 @@ export function TransactionList({ transactions, recurring, categories, cards, on
                       <Button 
                         size="icon" 
                         variant="ghost" 
-                        className="h-9 w-9 text-destructive hover:bg-destructive/10 rounded-xl"
+                        className="h-8 w-8 sm:h-9 sm:w-9 text-destructive hover:bg-destructive/10 rounded-xl"
                         onClick={() => setConfirmDeleteId(tx.id)}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -349,11 +349,11 @@ export function TransactionList({ transactions, recurring, categories, cards, on
                     </div>
                   )}
                   {tx.isVirtual && !tx.id.startsWith('bill-summary-') && onReschedule && (
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-9 w-9 text-primary hover:bg-primary/10 rounded-xl"
+                        className="h-8 w-8 sm:h-9 sm:w-9 text-primary hover:bg-primary/10 rounded-xl"
                         title="Reagendar lançamento"
                         onClick={() => {
                           setReschedulingTx(tx);
@@ -374,16 +374,16 @@ export function TransactionList({ transactions, recurring, categories, cards, on
             )
           ) : (
             creditStatement.length > 0 ? creditStatement.map((tx) => (
-              <div key={tx.id} className={`flex items-center justify-between p-4 rounded-2xl transition-all border group relative ${tx.date === today ? 'bg-amber-50/70 border-amber-300 hover:bg-amber-50' : 'bg-white/40 hover:bg-white/80 border-transparent hover:border-primary/10'}`}>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-accent/10 text-accent transition-transform group-hover:scale-110">
-                    <CreditCardIcon className="w-6 h-6" />
+              <div key={tx.id} className={`flex items-center justify-between p-3 sm:p-4 rounded-2xl transition-all border group relative ${tx.date === today ? 'bg-amber-50/70 border-amber-300 hover:bg-amber-50' : 'bg-white/40 hover:bg-white/80 border-transparent hover:border-primary/10'}`}>
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex-shrink-0 flex items-center justify-center bg-accent/10 text-accent transition-transform group-hover:scale-110">
+                    <CreditCardIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
-                  <div>
-                    <p className="font-bold text-gray-800 flex items-center gap-2">
+                  <div className="min-w-0">
+                    <p className="font-bold text-gray-800 text-sm sm:text-base truncate">
                       {tx.description}
                     </p>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1">
                       <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] font-bold uppercase">{tx.category}</span>
                       <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">{tx.date}</span>
                       {tx.installments && tx.installments > 1 && (
@@ -394,20 +394,20 @@ export function TransactionList({ transactions, recurring, categories, cards, on
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0 ml-2">
                   <div className="text-right">
-                    <p className="text-lg font-bold text-gray-900">
+                    <p className="text-sm sm:text-lg font-bold text-gray-900">
                       R$ {tx.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                     <p className="text-[9px] text-muted-foreground uppercase font-bold">
                       {cards.find(c => c.id === tx.cardId)?.name || 'Cartão'}
                     </p>
                   </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                     <Button 
                       size="icon" 
                       variant="ghost" 
-                      className="h-9 w-9 text-primary hover:bg-primary/10 rounded-xl"
+                      className="h-8 w-8 sm:h-9 sm:w-9 text-primary hover:bg-primary/10 rounded-xl"
                       onClick={() => setEditingTransaction(tx)}
                     >
                       <Edit2 className="w-4 h-4" />
@@ -415,7 +415,7 @@ export function TransactionList({ transactions, recurring, categories, cards, on
                     <Button 
                       size="icon" 
                       variant="ghost" 
-                      className="h-9 w-9 text-destructive hover:bg-destructive/10 rounded-xl"
+                      className="h-8 w-8 sm:h-9 sm:w-9 text-destructive hover:bg-destructive/10 rounded-xl"
                       onClick={() => setConfirmDeleteId(tx.id)}
                     >
                       <Trash2 className="w-4 h-4" />
