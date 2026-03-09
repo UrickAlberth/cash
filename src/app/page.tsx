@@ -420,18 +420,13 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
     } catch { toast({ title: 'Erro ao excluir', variant: 'destructive' }); }
   }, [userId]);
 
-  const anticipateTransaction = useCallback(async (tx: Transaction, newDate: string, newValue?: number) => {
+  const anticipateTransaction = useCallback(async (tx: Transaction, newDate: string) => {
     try {
-      const finalValue = newValue !== undefined ? newValue : tx.value;
-      const now = new Date();
-      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      const isAnticipating = newDate <= todayStr;
-
       if (tx.cardId && tx.category === 'Cartão de Crédito') {
         // It's a credit card bill summary — create a real expense and mark bill transactions as paid
         const txPayload: Omit<Transaction, 'id'> = {
           description: tx.description,
-          value: finalValue,
+          value: tx.value,
           date: newDate,
           type: 'expense',
           category: 'Cartão de Crédito',
@@ -466,31 +461,23 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
           ));
         }
         toast({ title: 'Fatura antecipada!', description: 'A fatura foi registrada como definitiva.' });
-      } else if (isAnticipating) {
-        // Anticipating: new date is today or earlier → create a definitive real transaction.
-        // Store the original scheduled month so the virtual copy for that month is suppressed.
-        // tx.date is always YYYY-MM-DD, so we can safely extract YYYY-MM with slice.
-        const scheduledFor = tx.date.slice(0, 7); // "YYYY-MM"
-
+      } else {
+        // It's a recurring virtual transaction — create a real transaction with the new date
         const txPayload: Omit<Transaction, 'id'> = {
           description: tx.description,
-          value: finalValue,
+          value: tx.value,
           date: newDate,
           type: tx.type,
           category: tx.category,
           subcategory: tx.subcategory,
           isRecurring: false,
           isPaid: false,
-          scheduledFor,
         };
         const created = await insertTransaction(userId, txPayload);
         setTransactions(prev => [created, ...prev]);
         toast({ title: 'Lançamento antecipado!', description: 'O agendamento foi registrado como definitivo.' });
-      } else {
-        // Postponing: new date is in the future → keep as a schedule (virtual copy remains).
-        toast({ title: 'Lançamento adiado!', description: 'O lançamento continua como agendamento na data original.' });
       }
-    } catch { toast({ title: 'Erro ao registrar', variant: 'destructive' }); }
+    } catch { toast({ title: 'Erro ao antecipar', variant: 'destructive' }); }
   }, [userId, transactions, cards]);
 
   if (dataLoading) {
@@ -672,4 +659,3 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
     </div>
   );
 }
-
