@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend 
 } from 'recharts';
-import { Transaction, SummaryData, Category } from '@/lib/types';
+import { Transaction, SummaryData, Category, RecurringExpense, CreditCard } from '@/lib/types';
 import { ArrowUpCircle, ArrowDownCircle, Wallet, TrendingUp } from 'lucide-react';
 
 const FALLBACK_COLORS = ['#E87DC0', '#E052E0', '#FFB7D5', '#D462AD', '#B042B0', '#FF7EB9'];
@@ -29,9 +29,11 @@ interface Props {
   transactions: Transaction[];
   summary: SummaryData;
   categories?: Category[];
+  recurring?: RecurringExpense[];
+  cards?: CreditCard[];
 }
 
-export function FinanceDashboard({ transactions, summary, categories = [] }: Props) {
+export function FinanceDashboard({ transactions, summary, categories = [], recurring = [], cards = [] }: Props) {
   const now = new Date();
   const [monthFilter, setMonthFilter] = useState<string>(String(now.getMonth() + 1));
   const [yearFilter, setYearFilter] = useState<string>(String(now.getFullYear()));
@@ -43,7 +45,7 @@ export function FinanceDashboard({ transactions, summary, categories = [] }: Pro
     return Array.from(years).sort((a, b) => Number(b) - Number(a));
   }, [transactions]);
 
-  // Filter transactions by selected month/year
+  // Filter real transactions by selected month/year
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
       const [txYear, txMonth] = t.date.split('-');
@@ -53,6 +55,98 @@ export function FinanceDashboard({ transactions, summary, categories = [] }: Pro
     });
   }, [transactions, monthFilter, yearFilter]);
 
+  // Generate virtual transactions (recurring + CC bill summaries) for the selected month
+  const virtualTransactions = useMemo(() => {
+    if (monthFilter === 'all' || yearFilter === 'all') return [];
+
+    const targetMonth = parseInt(monthFilter) - 1; // 0-based
+    const targetYear = parseInt(yearFilter);
+    const monthPadded = monthFilter.padStart(2, '0');
+    const virtual: Transaction[] = [];
+
+    // Recurring fixed transactions projected for the selected month
+    recurring.forEach(rec => {
+      if (rec.type === 'credit_card') return;
+
+      // Clamp day to the last day of the target month to handle months with fewer days
+      const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+      const clampedDay = Math.min(rec.dayOfMonth, daysInMonth);
+      const dateStr = `${targetYear}-${monthPadded}-${String(clampedDay).padStart(2, '0')}`;
+      const startDate = new Date(rec.startDate + 'T12:00:00');
+      const targetDate = new Date(dateStr + 'T12:00:00');
+
+      if (targetDate < startDate) return;
+
+      const alreadyLaunched = filteredTransactions.some(t =>
+        t.description.includes(rec.description) &&
+        Math.abs(t.value - rec.value) < 0.01 &&
+        t.date === dateStr
+      );
+
+      // Check if this occurrence was rescheduled to/from a different month
+      const wasRescheduled = transactions.some(t =>
+        t.description === rec.description &&
+        (
+          t.scheduledFor === `${targetYear}-${monthPadded}` ||
+          (t.date.startsWith(`${targetYear}-${monthPadded}`) && !!t.scheduledFor)
+        )
+      );
+
+      if (!alreadyLaunched && !wasRescheduled) {
+        virtual.push({
+          id: `v-${rec.id}-${targetMonth}-${targetYear}`,
+          description: rec.description,
+          value: rec.value,
+          date: dateStr,
+          category: rec.category,
+          subcategory: rec.subcategory,
+          type: rec.type,
+          isVirtual: true,
+          isRecurring: true,
+        });
+      }
+    });
+
+    // Credit card bill summaries for the selected month
+    cards.forEach(card => {
+      const billTransactions = transactions.filter(t => {
+        if (t.type !== 'credit_card' || t.cardId !== card.id) return false;
+        const tDate = new Date(t.date + 'T12:00:00');
+        const tDay = tDate.getDate();
+        let tMonth = tDate.getMonth();
+        let tYear = tDate.getFullYear();
+        if (tDay > card.closingDay) {
+          tMonth++;
+          if (tMonth > 11) { tMonth = 0; tYear++; }
+        }
+        return tMonth === targetMonth && tYear === targetYear;
+      });
+
+      const total = billTransactions.reduce((acc, t) => acc + t.value, 0);
+      if (total > 0) {
+        virtual.push({
+          id: `bill-summary-${card.id}-${targetMonth}-${targetYear}`,
+          description: `Fatura: ${card.name}`,
+          value: Number(total.toFixed(2)),
+          date: `${targetYear}-${monthPadded}-${String(card.dueDay).padStart(2, '0')}`,
+          category: 'Cartão de Crédito',
+          subcategory: 'Fatura',
+          type: 'expense',
+          isVirtual: true,
+          isRecurring: false,
+        });
+      }
+    });
+
+    return virtual;
+  }, [transactions, filteredTransactions, recurring, cards, monthFilter, yearFilter]);
+
+  // Combined transactions used for totals and charts (real + virtual)
+  const allFilteredTransactions = useMemo(
+    () => [...filteredTransactions, ...virtualTransactions],
+    [filteredTransactions, virtualTransactions]
+  );
+
   // Build category color map
   const categoryColorMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -61,8 +155,8 @@ export function FinanceDashboard({ transactions, summary, categories = [] }: Pro
   }, [categories]);
 
   // Process data for pie chart (expenses by category)
-  const categoryDataMap = filteredTransactions
-    .filter(t => t.type !== 'income')
+  const categoryDataMap = allFilteredTransactions
+    .filter(t => t.type !== 'income' && t.type !== 'savings_withdrawal' && t.type !== 'savings')
     .reduce((acc: Record<string, number>, t) => {
       acc[t.category] = (acc[t.category] || 0) + t.value;
       return acc;
@@ -73,9 +167,9 @@ export function FinanceDashboard({ transactions, summary, categories = [] }: Pro
   const getCategoryColor = (name: string) =>
     categoryColorMap[name] ?? hashColor(name);
 
-  // Filtered summary values
-  const filteredIncome = filteredTransactions.filter(t => t.type === 'income' || t.type === 'savings_withdrawal').reduce((s, t) => s + t.value, 0);
-  const filteredExpense = filteredTransactions.filter(t => t.type === 'expense' || (t.type === 'credit_card' && t.isPaid)).reduce((s, t) => s + t.value, 0);
+  // Filtered summary values (including virtual transactions)
+  const filteredIncome = allFilteredTransactions.filter(t => t.type === 'income' || t.type === 'savings_withdrawal').reduce((s, t) => s + t.value, 0);
+  const filteredExpense = allFilteredTransactions.filter(t => t.type === 'expense' || (t.type === 'credit_card' && t.isPaid)).reduce((s, t) => s + t.value, 0);
   const filteredProfit = filteredIncome - filteredExpense;
 
   const filterLabel = monthFilter === 'all'
@@ -206,7 +300,7 @@ export function FinanceDashboard({ transactions, summary, categories = [] }: Pro
           </CardHeader>
           <CardContent className="h-[350px]">
             {(() => {
-              const barData = filteredTransactions.filter(t => t.type !== 'income').slice(0, 10).reverse();
+              const barData = allFilteredTransactions.filter(t => t.type !== 'income' && t.type !== 'savings_withdrawal' && t.type !== 'savings').slice(0, 10).reverse();
               return (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={barData}>
