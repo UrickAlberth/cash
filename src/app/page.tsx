@@ -146,6 +146,7 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
   const [dataLoading, setDataLoading] = useState(true);
   const [editingRec, setEditingRec] = useState<RecurringExpense | null>(null);
   const [editingCat, setEditingCat] = useState<Category | null>(null);
+  const [catModalOpen, setCatModalOpen] = useState(false);
 
   // Load persisted theme hue from localStorage after hydration
   useEffect(() => {
@@ -571,7 +572,7 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
-            <FinanceDashboard transactions={transactions} summary={summary} categories={categories} />
+            <FinanceDashboard transactions={transactions} summary={summary} categories={categories} recurring={recurring} cards={cards} />
           </TabsContent>
 
           <TabsContent value="transactions">
@@ -678,19 +679,9 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {categories.map(cat => (
-                    <div key={cat.id} className="flex items-center justify-between p-3 rounded-xl border bg-white gap-2 group">
-                      <div className="flex items-center gap-2">
-                        <span className="w-4 h-4 rounded-full shrink-0 border" style={{ backgroundColor: cat.color }} />
-                        <span className="text-sm font-medium truncate">{cat.name}</span>
-                      </div>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-primary opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0" onClick={() => setEditingCat(cat)}>
-                        <Edit2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                <Button variant="outline" className="rounded-xl" onClick={() => setCatModalOpen(true)}>
+                  <Edit2 className="w-4 h-4 mr-2" /> Editar
+                </Button>
               </CardContent>
             </Card>
 
@@ -698,6 +689,25 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={catModalOpen} onOpenChange={setCatModalOpen}>
+        <DialogContent className="bg-white rounded-3xl sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="text-primary font-headline">Categorias</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
+            {categories.map(cat => (
+              <div key={cat.id} className="flex items-center justify-between p-3 rounded-xl border bg-white gap-2 group">
+                <div className="flex items-center gap-2">
+                  <span className="w-4 h-4 rounded-full shrink-0 border" style={{ backgroundColor: cat.color }} />
+                  <span className="text-sm font-medium truncate">{cat.name}</span>
+                </div>
+                <Button size="icon" variant="ghost" className="h-7 w-7 text-primary shrink-0" onClick={() => { setCatModalOpen(false); setEditingCat(cat); }}>
+                  <Edit2 className="w-3 h-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!editingCat} onOpenChange={() => setEditingCat(null)}>
         <DialogContent className="bg-white rounded-3xl sm:max-w-[425px]">
