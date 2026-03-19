@@ -8,7 +8,8 @@ import {
   CreditCard as CardIcon, 
   ReceiptText,
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  ChevronDown
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -25,6 +26,7 @@ interface Props {
 
 export function CreditCardBills({ cards, transactions }: Props) {
   const [selectedBill, setSelectedBill] = useState<any | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
   const billsData = useMemo(() => {
     const now = new Date();
@@ -77,66 +79,103 @@ export function CreditCardBills({ cards, transactions }: Props) {
     return results;
   }, [cards, transactions]);
 
+  // Determine which bill index is "current": after the due date, the current bill
+  // shifts to the next month's bill.
+  const getCurrentBillIdx = (card: CreditCard, billsCount: number): number => {
+    const today = new Date().getDate();
+    const idx = today > card.dueDay ? 1 : 0;
+    return Math.min(idx, billsCount - 1);
+  };
+
+  const toggleCard = (cardId: string) => {
+    setExpandedCards(prev => {
+      const next = new Set(prev);
+      if (next.has(cardId)) {
+        next.delete(cardId);
+      } else {
+        next.add(cardId);
+      }
+      return next;
+    });
+  };
+
   const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
   return (
     <div className="space-y-6">
-      {cards.map(card => (
-        <Card key={card.id} className="border-none shadow-xl bg-white/60 backdrop-blur-md">
-          <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg flex-shrink-0" style={{ backgroundColor: card.color }}>
-                <CardIcon className="w-5 h-5" />
-              </div>
-              <div>
-                <CardTitle className="text-lg font-bold">{card.name}</CardTitle>
-                <p className="text-xs text-muted-foreground">Fecha dia {card.closingDay} • Vence dia {card.dueDay}</p>
-              </div>
-            </div>
-            <div className="text-left sm:text-right">
-              <p className="text-[10px] uppercase font-bold text-muted-foreground">Limite Total</p>
-              <p className="font-bold text-primary">R$ {card.limit.toLocaleString('pt-BR')}</p>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {billsData[card.id].map((bill: any, idx: number) => (
-                <div key={idx} className={`p-4 rounded-2xl border transition-all ${idx === 0 ? 'bg-primary/5 border-primary/20 ring-1 ring-primary/10' : 'bg-white/40 border-primary/5'}`}>
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h4 className="font-bold text-sm">{monthNames[bill.month]} {bill.year}</h4>
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold">Vencimento: {bill.dueDay}/{bill.month + 1}</p>
-                    </div>
-                    {idx === 0 && <span className="text-[9px] bg-primary text-white px-2 py-0.5 rounded-full font-bold uppercase">Atual</span>}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-end">
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold">Valor da Fatura</p>
-                      <p className="font-bold text-lg text-primary">R$ {bill.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                    </div>
-                    <Progress value={(bill.total / card.limit) * 100} className="h-1.5" />
-                    <div className="flex justify-between text-[9px] font-bold text-muted-foreground uppercase">
-                      <span>{((bill.total / card.limit) * 100).toFixed(1)}% usado</span>
-                      <span>Disponível: R$ {(card.limit - bill.total).toFixed(0)}</span>
-                    </div>
-                  </div>
+      {cards.map(card => {
+        const isExpanded = expandedCards.has(card.id);
+        const bills: any[] = billsData[card.id] || [];
+        const currentBillIdx = getCurrentBillIdx(card, bills.length);
+        const visibleBills = isExpanded ? bills : [bills[currentBillIdx]].filter(Boolean);
 
-                  <div className="mt-4 pt-3 border-t border-primary/5">
-                    <button 
-                      className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline w-full justify-between"
-                      onClick={() => setSelectedBill(bill)}
-                    >
-                      <span className="flex items-center gap-1"><ReceiptText className="w-3 h-3" /> Ver {bill.transactions.length} lançamentos</span>
-                      <ChevronRight className="w-3 h-3" />
-                    </button>
-                  </div>
+        return (
+          <Card key={card.id} className="border-none shadow-xl bg-white/60 backdrop-blur-md">
+            <CardHeader
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer select-none"
+              onClick={() => toggleCard(card.id)}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg flex-shrink-0" style={{ backgroundColor: card.color }}>
+                  <CardIcon className="w-5 h-5" />
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+                <div>
+                  <CardTitle className="text-lg font-bold">{card.name}</CardTitle>
+                  <p className="text-xs text-muted-foreground">Fecha dia {card.closingDay} • Vence dia {card.dueDay}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-left sm:text-right">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Limite Total</p>
+                  <p className="font-bold text-primary">R$ {card.limit.toLocaleString('pt-BR')}</p>
+                </div>
+                <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {visibleBills.map((bill: any, displayIdx: number) => {
+                  const billIdx = bills.indexOf(bill);
+                  const isCurrent = billIdx === currentBillIdx;
+                  return (
+                    <div key={displayIdx} className={`p-4 rounded-2xl border transition-all ${isCurrent ? 'bg-primary/5 border-primary/20 ring-1 ring-primary/10' : 'bg-white/40 border-primary/5'}`}>
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h4 className="font-bold text-sm">{monthNames[bill.month]} {bill.year}</h4>
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold">Vencimento: {bill.dueDay}/{bill.month + 1}</p>
+                        </div>
+                        {isCurrent && <span className="text-[9px] bg-primary text-white px-2 py-0.5 rounded-full font-bold uppercase">Atual</span>}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-end">
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold">Valor da Fatura</p>
+                          <p className="font-bold text-lg text-primary">R$ {bill.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        </div>
+                        <Progress value={(bill.total / card.limit) * 100} className="h-1.5" />
+                        <div className="flex justify-between text-[9px] font-bold text-muted-foreground uppercase">
+                          <span>{((bill.total / card.limit) * 100).toFixed(1)}% usado</span>
+                          <span>Disponível: R$ {(card.limit - bill.total).toFixed(0)}</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-primary/5">
+                        <button 
+                          className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline w-full justify-between"
+                          onClick={(e) => { e.stopPropagation(); setSelectedBill(bill); }}
+                        >
+                          <span className="flex items-center gap-1"><ReceiptText className="w-3 h-3" /> Ver {bill.transactions.length} lançamentos</span>
+                          <ChevronRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
       
       {cards.length === 0 && (
         <div className="text-center py-20 bg-white/20 rounded-3xl border border-dashed border-primary/20">
