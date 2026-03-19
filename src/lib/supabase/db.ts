@@ -190,6 +190,15 @@ export async function insertCategory(userId: string, name: string, color: string
   return { id: data.id, name: data.name, color: data.color };
 }
 
+export async function updateCategoryById(userId: string, category: Category): Promise<void> {
+  const { error } = await supabase
+    .from('categories')
+    .update({ name: category.name, color: category.color })
+    .eq('id', category.id)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
 // ── Recurring expenses ────────────────────────────────────────────────────────
 
 export async function fetchRecurring(userId: string): Promise<RecurringExpense[]> {

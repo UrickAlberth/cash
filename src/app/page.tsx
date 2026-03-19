@@ -15,7 +15,7 @@ import {
   fetchTransactions, insertTransaction, upsertTransaction,
   deleteTransactionById, deleteTransactionsByBaseId, deleteTransactionsByPeriod,
   fetchCards, insertCard, updateCardById, deleteCardById,
-  fetchCategories, insertCategory,
+  fetchCategories, insertCategory, updateCategoryById,
   fetchRecurring, insertRecurring, updateRecurringById, deleteRecurringById,
 } from '@/lib/supabase/db';
 import { INITIAL_CATEGORIES } from '@/lib/store';
@@ -145,6 +145,13 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
   const [themeHue, setThemeHue] = useState<number>(322);
   const [dataLoading, setDataLoading] = useState(true);
   const [editingRec, setEditingRec] = useState<RecurringExpense | null>(null);
+  const [editingCat, setEditingCat] = useState<Category | null>(null);
+
+  // Load persisted theme hue from localStorage after hydration
+  useEffect(() => {
+    const saved = localStorage.getItem('themeHue');
+    if (saved !== null) setThemeHue(Number(saved));
+  }, []);
 
   // Load all data from Supabase on mount
   useEffect(() => {
@@ -185,6 +192,11 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
     loadData();
     return () => { cancelled = true; };
   }, [userId]);
+
+  // Persist theme hue to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('themeHue', String(themeHue));
+  }, [themeHue]);
 
   // Injetar cores dinâmicas
   const dynamicStyles = useMemo(() => {
@@ -467,6 +479,14 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
     } catch { toast({ title: 'Erro ao salvar categoria', variant: 'destructive' }); }
   }, [userId]);
 
+  const updateCategory = useCallback(async (updated: Category) => {
+    try {
+      await updateCategoryById(userId, updated);
+      setCategories(prev => prev.map(c => c.id === updated.id ? updated : c));
+      setEditingCat(null);
+    } catch { toast({ title: 'Erro ao atualizar categoria', variant: 'destructive' }); }
+  }, [userId]);
+
   const updateRecurring = useCallback(async (updated: RecurringExpense) => {
     const rec = { ...updated, value: Number(updated.value.toFixed(2)) };
     try {
@@ -551,7 +571,7 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
-            <FinanceDashboard transactions={transactions} summary={summary} />
+            <FinanceDashboard transactions={transactions} summary={summary} categories={categories} />
           </TabsContent>
 
           <TabsContent value="transactions">
@@ -651,10 +671,52 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
               </CardContent>
             </Card>
 
+            <Card className="border-none shadow-xl bg-white/60 backdrop-blur-md">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-primary">
+                  <Palette className="w-6 h-6" /> Categorias
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {categories.map(cat => (
+                    <div key={cat.id} className="flex items-center justify-between p-3 rounded-xl border bg-white gap-2 group">
+                      <div className="flex items-center gap-2">
+                        <span className="w-4 h-4 rounded-full shrink-0 border" style={{ backgroundColor: cat.color }} />
+                        <span className="text-sm font-medium truncate">{cat.name}</span>
+                      </div>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-primary opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0" onClick={() => setEditingCat(cat)}>
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             <CreditCardManager cards={cards} onAdd={addCard} onUpdate={updateCard} onDelete={deleteCard} />
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={!!editingCat} onOpenChange={() => setEditingCat(null)}>
+        <DialogContent className="bg-white rounded-3xl sm:max-w-[425px]">
+          <DialogHeader><DialogTitle className="text-primary font-headline">Editar Categoria</DialogTitle></DialogHeader>
+          {editingCat && (
+            <div className="space-y-4 pt-4">
+              <div className="space-y-2"><Label>Nome</Label><Input value={editingCat.name} onChange={e => setEditingCat({...editingCat, name: e.target.value})} className="rounded-xl" /></div>
+              <div className="space-y-2">
+                <Label>Cor</Label>
+                <div className="flex items-center gap-3">
+                  <input type="color" value={editingCat.color} onChange={e => setEditingCat({...editingCat, color: e.target.value})} className="w-10 h-10 rounded-lg cursor-pointer border border-input" />
+                  <span className="text-sm text-muted-foreground">{editingCat.color}</span>
+                </div>
+              </div>
+              <DialogFooter className="pt-4"><Button onClick={() => updateCategory(editingCat)} className="w-full rounded-xl">Salvar</Button></DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!editingRec} onOpenChange={() => setEditingRec(null)}>
         <DialogContent className="bg-white rounded-3xl sm:max-w-[425px]">
