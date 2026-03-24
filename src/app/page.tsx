@@ -19,6 +19,7 @@ import {
   fetchRecurring, insertRecurring, updateRecurringById, deleteRecurringById,
 } from '@/lib/supabase/db';
 import { INITIAL_CATEGORIES } from '@/lib/store';
+import { sendToSheets } from '@/lib/sheets';
 import { Transaction, SummaryData, RecurringExpense, CreditCard, Category } from '@/lib/types';
 import { 
   Tabs, 
@@ -300,6 +301,7 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
         try {
           const created = await insertTransaction(userId, txPayload);
           setTransactions(prev => [created, ...prev]);
+          sendToSheets(created);
         } catch { toast({ title: 'Erro ao salvar parcela', variant: 'destructive' }); }
       }
     } else {
@@ -312,6 +314,7 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
       try {
         const created = await insertTransaction(userId, txPayload);
         setTransactions(prev => [created, ...prev]);
+        sendToSheets(created);
       } catch { toast({ title: 'Erro ao salvar transação', variant: 'destructive' }); }
     }
   }, [userId]);
