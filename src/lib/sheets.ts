@@ -5,15 +5,20 @@ const SHEETS_API_URL =
   process.env.NEXT_PUBLIC_SHEETS_API_URL ??
   'https://script.google.com/macros/s/AKfycbxqsp25QdTWpyvBa7nV3k_QrO9VvGr1RSYcp71fpVxO3OzdZP0N5sLT3g_ze6_c7tcrOg/exec';
 
-export function sendToSheets(tx: Transaction, cc: CreditCard): void {
+export function sendToSheets(tx: Transaction): void {
   let body;
 
-  // 🔠 Normaliza texto para MAIÚSCULO
   const categoria = tx.category?.toUpperCase() ?? '';
   const subcategoria = tx.subcategory?.toUpperCase() ?? '';
 
+  const cc = getCardById(tx.cardId);
+
   if (tx.type === 'credit_card') {
-    // 💳 Cartão de crédito
+    if (!cc) {
+      console.error('[sheets] Cartão não encontrado para cardId:', tx.cardId);
+      return;
+    }
+
     body = {
       action: 'addCredit',
       date: tx.date,
@@ -26,12 +31,12 @@ export function sendToSheets(tx: Transaction, cc: CreditCard): void {
 
   } else {
     const labels = {
-  income: 'ENTRADA',
-  expense: 'SAÍDA'
-};
+      income: 'ENTRADA',
+      expense: 'SAÍDA'
+    };
 
-const tipo = labels[tx.type] || tx.type;
-const valor = tx.type === 'expense' ? -Math.abs(tx.value) : tx.value;
+    const tipo = labels[tx.type] || tx.type;
+    const valor = tx.type === 'expense' ? -Math.abs(tx.value) : tx.value;
 
     body = {
       action: 'addDebit',
