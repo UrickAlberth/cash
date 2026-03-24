@@ -46,7 +46,7 @@ export function sendToSheets(tx: Transaction): void {
 
   fetch(SHEETS_API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    mode: 'no-cors',
     body: JSON.stringify(body),
   }).catch((err) => console.error('[sheets] sync failed:', err));
 }
