@@ -49,7 +49,7 @@ export async function sendToSheets(tx: Transaction): Promise<void> {
     body = {
       action: 'addCredit',
       date: tx.date,
-      categoria: cc.name, // vem do banco
+      categoria: cc.name.toUpperCase(), // vem do banco
       subcategoria: categoria,
       descricao: tx.description,
       valor: tx.value,
