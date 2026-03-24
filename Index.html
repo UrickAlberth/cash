@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RosaCash – Lançamentos</title>
+  <style>
+    /* ── Reset & base ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #fdf4f9;
+      color: #3b3b4f;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+    h1 { font-size: 1.6rem; color: #c0398a; margin-bottom: 1.5rem; }
+    h2 { font-size: 1.1rem; color: #c0398a; margin-bottom: 1rem; }
+
+    /* ── Tabs ─────────────────────────────────────────────────────────── */
+    .tabs { display: flex; gap: .5rem; margin-bottom: 1.5rem; }
+    .tab-btn {
+      padding: .5rem 1.5rem;
+      border: 2px solid #c0398a;
+      border-radius: 999px;
+      background: transparent;
+      color: #c0398a;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .tab-btn.active { background: #c0398a; color: #fff; }
+
+    /* ── Card ─────────────────────────────────────────────────────────── */
+    .card {
+      width: 100%;
+      max-width: 480px;
+      background: #fff;
+      border-radius: 1.25rem;
+      box-shadow: 0 4px 24px rgba(192,57,138,.12);
+      padding: 1.5rem;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Form elements ────────────────────────────────────────────────── */
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .35rem; color: #555; }
+    input, select {
+      width: 100%;
+      padding: .65rem .9rem;
+      border: 1.5px solid #e0c8d8;
+      border-radius: .75rem;
+      font-size: .95rem;
+      transition: border-color .15s;
+      background: #fdf4f9;
+    }
+    input:focus, select:focus { outline: none; border-color: #c0398a; }
+
+    /* ── Submit button ────────────────────────────────────────────────── */
+    .btn-submit {
+      width: 100%;
+      padding: .85rem;
+      border: none;
+      border-radius: .75rem;
+      background: #c0398a;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .15s, opacity .15s;
+      margin-top: .5rem;
+    }
+    .btn-submit:disabled { opacity: .6; cursor: not-allowed; }
+    .btn-submit:not(:disabled):hover { background: #a8306e; }
+
+    /* ── Feedback banner ──────────────────────────────────────────────── */
+    .feedback {
+      display: none;
+      align-items: center;
+      gap: .6rem;
+      padding: .75rem 1rem;
+      border-radius: .75rem;
+      margin-top: 1rem;
+      font-weight: 600;
+      font-size: .9rem;
+    }
+    .feedback.success { background: #eafaf1; color: #1a7a45; display: flex; }
+    .feedback.error   { background: #fdecea; color: #b71c1c; display: flex; }
+  </style>
+</head>
+<body>
+
+  <h1>💸 RosaCash</h1>
+
+  <!-- Tab buttons -->
+  <div class="tabs">
+    <button class="tab-btn active" data-target="tabDebito">Débito</button>
+    <button class="tab-btn"        data-target="tabCredito">Crédito</button>
+  </div>
+
+  <div class="card">
+
+    <!-- ── Debit form ──────────────────────────────────────────────── -->
+    <div id="tabDebito" class="tab-panel active">
+      <h2>Novo Débito</h2>
+      <form id="formDebito">
+        <div class="form-group">
+          <label for="debitDate">Data</label>
+          <input type="date" id="debitDate" name="date" required />
+        </div>
+        <div class="form-group">
+          <label for="debitDescription">Descrição</label>
+          <input type="text" id="debitDescription" name="description" placeholder="Ex: Mercado" required />
+        </div>
+        <div class="form-group">
+          <label for="debitValue">Valor (R$)</label>
+          <input type="number" id="debitValue" name="value" min="0.01" step="0.01" placeholder="0,00" required />
+        </div>
+        <div class="form-group">
+          <label for="debitCategory">Categoria</label>
+          <input type="text" id="debitCategory" name="category" placeholder="Ex: Alimentação" />
+        </div>
+        <div class="form-group">
+          <label for="debitMonths">Repetir por quantos meses?</label>
+          <select id="debitMonths" name="months">
+            <option value="1">1 (apenas este)</option>
+            <option value="2">2 meses</option>
+            <option value="3">3 meses</option>
+            <option value="6">6 meses</option>
+            <option value="12">12 meses</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-submit" id="btnDebit">Salvar Débito</button>
+        <div class="feedback" id="feedbackDebito"></div>
+      </form>
+    </div>
+
+    <!-- ── Credit form ─────────────────────────────────────────────── -->
+    <div id="tabCredito" class="tab-panel">
+      <h2>Novo Crédito</h2>
+      <form id="formCredito">
+        <div class="form-group">
+          <label for="creditDate">Data</label>
+          <input type="date" id="creditDate" name="date" required />
+        </div>
+        <div class="form-group">
+          <label for="creditDescription">Descrição</label>
+          <input type="text" id="creditDescription" name="description" placeholder="Ex: Salário" required />
+        </div>
+        <div class="form-group">
+          <label for="creditValue">Valor (R$)</label>
+          <input type="number" id="creditValue" name="value" min="0.01" step="0.01" placeholder="0,00" required />
+        </div>
+        <div class="form-group">
+          <label for="creditCategory">Categoria</label>
+          <input type="text" id="creditCategory" name="category" placeholder="Ex: Salário" />
+        </div>
+        <div class="form-group">
+          <label for="creditMonths">Repetir por quantos meses?</label>
+          <select id="creditMonths" name="months">
+            <option value="1">1 (apenas este)</option>
+            <option value="2">2 meses</option>
+            <option value="3">3 meses</option>
+            <option value="6">6 meses</option>
+            <option value="12">12 meses</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-submit" id="btnCredit">Salvar Crédito</button>
+        <div class="feedback" id="feedbackCredito"></div>
+      </form>
+    </div>
+
+  </div><!-- /.card -->
+
+  <script>
+    // ── Tab switching ────────────────────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+        document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.target).classList.add('active');
+      });
+    });
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /** Sets today's date as the default value for all date inputs. */
+    function setDefaultDates() {
+      var today = new Date().toISOString().split('T')[0];
+      document.getElementById('debitDate').value  = today;
+      document.getElementById('creditDate').value = today;
+    }
+
+    /**
+     * Shows a feedback banner below a form.
+     * @param {string} feedbackId - Element ID of the .feedback div.
+     * @param {'success'|'error'} type
+     * @param {string} message
+     */
+    function showFeedback(feedbackId, type, message) {
+      var el = document.getElementById(feedbackId);
+      el.className = 'feedback ' + type;
+      el.textContent = type === 'success' ? '✅ ' + message : '❌ ' + message;
+    }
+
+    /**
+     * Resets a form and re-enables its submit button.
+     * @param {HTMLFormElement} form
+     * @param {HTMLButtonElement} btn
+     * @param {string} originalLabel
+     */
+    function resetForm(form, btn, originalLabel) {
+      form.reset();
+      setDefaultDates();
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+    }
+
+    // ── Debit form submit ────────────────────────────────────────────────────
+    document.getElementById('formDebito').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      var form = e.target;
+      var btn  = document.getElementById('btnDebit');
+      btn.disabled    = true;
+      btn.textContent = 'Salvando…';
+
+      var payload = {
+        date:        form.date.value,
+        description: form.description.value.trim(),
+        value:       parseFloat(form.value.value),
+        category:    form.category.value.trim(),
+        months:      parseInt(form.months.value, 10)
+      };
+
+      // 1. Call addDebit – fast response to update the UI immediately.
+      google.script.run
+        .withSuccessHandler(function(response) {
+          if (!response || !response.ok) {
+            showFeedback('feedbackDebito', 'error', 'Erro inesperado no servidor.');
+            btn.disabled    = false;
+            btn.textContent = 'Salvar Débito';
+            return;
+          }
+
+          // Instant UI feedback.
+          showFeedback('feedbackDebito', 'success', 'Débito registrado com sucesso!');
+          resetForm(form, btn, 'Salvar Débito');
+
+          // 2. Fire-and-forget: write to the spreadsheet in the background.
+          google.script.run
+            .withFailureHandler(function() {
+              // Background write failed – show a soft warning so the user is aware.
+              console.warn('[RosaCash] saveDebitToSheet: falha silenciosa na planilha.');
+              var el = document.getElementById('feedbackDebito');
+              el.className = 'feedback error';
+              el.textContent = '⚠️ Lançamento salvo, mas houve um problema ao sincronizar com a planilha. Tente novamente mais tarde.';
+            })
+            .saveDebitToSheet(payload);
+        })
+        .withFailureHandler(function(error) {
+          showFeedback('feedbackDebito', 'error', 'Falha ao registrar: ' + (error.message || error));
+          btn.disabled    = false;
+          btn.textContent = 'Salvar Débito';
+        })
+        .addDebit(payload);
+    });
+
+    // ── Credit form submit ───────────────────────────────────────────────────
+    document.getElementById('formCredito').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      var form = e.target;
+      var btn  = document.getElementById('btnCredit');
+      btn.disabled    = true;
+      btn.textContent = 'Salvando…';
+
+      var payload = {
+        date:        form.date.value,
+        description: form.description.value.trim(),
+        value:       parseFloat(form.value.value),
+        category:    form.category.value.trim(),
+        months:      parseInt(form.months.value, 10)
+      };
+
+      // 1. Call addCredit – fast response to update the UI immediately.
+      google.script.run
+        .withSuccessHandler(function(response) {
+          if (!response || !response.ok) {
+            showFeedback('feedbackCredito', 'error', 'Erro inesperado no servidor.');
+            btn.disabled    = false;
+            btn.textContent = 'Salvar Crédito';
+            return;
+          }
+
+          // Instant UI feedback.
+          showFeedback('feedbackCredito', 'success', 'Crédito registrado com sucesso!');
+          resetForm(form, btn, 'Salvar Crédito');
+
+          // 2. Fire-and-forget: write to the spreadsheet in the background.
+          google.script.run
+            .withFailureHandler(function() {
+              // Background write failed – show a soft warning so the user is aware.
+              console.warn('[RosaCash] saveCreditToSheet: falha silenciosa na planilha.');
+              var el = document.getElementById('feedbackCredito');
+              el.className = 'feedback error';
+              el.textContent = '⚠️ Lançamento salvo, mas houve um problema ao sincronizar com a planilha. Tente novamente mais tarde.';
+            })
+            .saveCreditToSheet(payload);
+        })
+        .withFailureHandler(function(error) {
+          showFeedback('feedbackCredito', 'error', 'Falha ao registrar: ' + (error.message || error));
+          btn.disabled    = false;
+          btn.textContent = 'Salvar Crédito';
+        })
+        .addCredit(payload);
+    });
+
+    // ── Init ─────────────────────────────────────────────────────────────────
+    setDefaultDates();
+  </script>
+</body>
+</html>
