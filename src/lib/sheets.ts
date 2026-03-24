@@ -24,12 +24,13 @@ export function sendToSheets(tx: Transaction): void {
     };
 
   } else {
-    const tipo =
-      tx.type === 'income'
-        ? 'ENTRADA'
-        : tx.type === 'expense'
-        ? 'SAÍDA'
-        : tx.type;
+    const labels = {
+  income: 'ENTRADA',
+  expense: 'SAÍDA'
+};
+
+const tipo = labels[tx.type] || tx.type;
+const valor = tx.type === 'expense' ? -Math.abs(tx.value) : tx.value;
 
     body = {
       action: 'addDebit',
@@ -38,7 +39,7 @@ export function sendToSheets(tx: Transaction): void {
       subcategoria,
       descricao: tx.description,
       tipo,
-      valor: tx.value,
+      valor,
     };
   }
 
