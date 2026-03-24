@@ -1,19 +1,10 @@
 import type { Transaction, CreditCard } from './types';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from './supabase/client'; 
 
 const SHEETS_API_URL =
   process.env.NEXT_PUBLIC_SHEETS_API_URL ??
   'https://script.google.com/macros/s/AKfycbxqsp25QdTWpyvBa7nV3k_QrO9VvGr1RSYcp71fpVxO3OzdZP0N5sLT3g_ze6_c7tcrOg/exec';
 
-/**
- * Cria cliente Supabase
- */
-function getSupabase() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
 
 /**
  * Busca cartão no banco pelo ID
@@ -21,10 +12,8 @@ function getSupabase() {
 async function getCardById(cardId?: string): Promise<CreditCard | null> {
   if (!cardId) return null;
 
-  const supabase = getSupabase();
-
   const { data, error } = await supabase
-    .from('cards') 
+    .from('cards')
     .select('*')
     .eq('id', cardId)
     .single();
