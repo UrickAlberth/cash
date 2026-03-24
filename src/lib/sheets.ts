@@ -5,28 +5,41 @@ const SHEETS_API_URL =
   'https://script.google.com/macros/s/AKfycbxqsp25QdTWpyvBa7nV3k_QrO9VvGr1RSYcp71fpVxO3OzdZP0N5sLT3g_ze6_c7tcrOg/exec';
 
 export function sendToSheets(tx: Transaction): void {
-  const isCredit = tx.type === 'income';
+  let body;
 
-  const body = isCredit
-    ? {
-        action: 'addCredit',
-        date: tx.date,
-        categoria: tx.category,
-        subcategoria: tx.subcategory ?? '',
-        descricao: tx.description,
-        valor: tx.value,
-        repetitions: tx.installments ?? 1,
-      }
-    : {
-        action: 'addDebit',
-        date: tx.date,
-        categoria: tx.category,
-        subcategoria: tx.subcategory ?? '',
-        descricao: tx.description,
-        tipo: tx.type,
-        valor: tx.value,
-      };
-  console.log(body)
+  if (tx.type === 'credit_card') {
+    // 💳 Cartão de crédito
+    body = {
+      action: 'addCredit',
+      date: tx.date,
+      categoria: tx.category,
+      subcategoria: tx.subcategory ?? '',
+      descricao: tx.description,
+      valor: tx.value,
+      repetitions: tx.installments ?? 1,
+    };
+
+  } else {
+    // 🔁 Entrada ou saída normal
+    const tipo =
+      tx.type === 'income'
+        ? 'ENTRADA'
+        : tx.type === 'expense'
+        ? 'SAÍDA'
+        : tx.type;
+
+    body = {
+      action: 'addDebit',
+      date: tx.date,
+      categoria: tx.category,
+      subcategoria: tx.subcategory ?? '',
+      descricao: tx.description,
+      tipo,
+      valor: tx.value,
+    };
+  }
+
+  console.log(body);
 
   fetch(SHEETS_API_URL, {
     method: 'POST',
