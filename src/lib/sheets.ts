@@ -7,20 +7,23 @@ const SHEETS_API_URL =
 export function sendToSheets(tx: Transaction): void {
   let body;
 
+  // 🔠 Normaliza texto para MAIÚSCULO
+  const categoria = tx.category?.toUpperCase() ?? '';
+  const subcategoria = tx.subcategory?.toUpperCase() ?? '';
+
   if (tx.type === 'credit_card') {
     // 💳 Cartão de crédito
     body = {
       action: 'addCredit',
       date: tx.date,
-      categoria: tx.category,
-      subcategoria: tx.subcategory ?? '',
+      categoria,
+      subcategoria,
       descricao: tx.description,
       valor: tx.value,
       repetitions: tx.installments ?? 1,
     };
 
   } else {
-    // 🔁 Entrada ou saída normal
     const tipo =
       tx.type === 'income'
         ? 'ENTRADA'
@@ -31,8 +34,8 @@ export function sendToSheets(tx: Transaction): void {
     body = {
       action: 'addDebit',
       date: tx.date,
-      categoria: tx.category,
-      subcategoria: tx.subcategory ?? '',
+      categoria,
+      subcategoria,
       descricao: tx.description,
       tipo,
       valor: tx.value,
