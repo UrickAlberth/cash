@@ -26,6 +26,7 @@ export function sendToSheets(tx: Transaction): void {
         tipo: tx.type,
         valor: tx.value,
       };
+  console.log(body)
 
   fetch(SHEETS_API_URL, {
     method: 'POST',
