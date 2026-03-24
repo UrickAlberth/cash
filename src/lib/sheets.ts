@@ -23,7 +23,7 @@ export function sendToSheets(tx: Transaction): void {
         categoria: tx.category,
         subcategoria: tx.subcategory ?? '',
         descricao: tx.description,
-        tipo: 'SAÍDA',
+        tipo: tx.type === 'savings_withdrawal' ? 'ENTRADA' : 'SAÍDA',
         valor: tx.value,
       };
   console.log(body)
