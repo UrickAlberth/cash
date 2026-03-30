@@ -141,8 +141,7 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
       if (targetDate >= now) {
         const alreadyLaunched = transactions.some(t => 
            t.date === dateStr && 
-           t.description.includes(r.description) && 
-           Math.abs(t.value - r.value) < 0.01
+           t.description.includes(r.description)
         );
         return !alreadyLaunched;
       }
