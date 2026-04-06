@@ -139,7 +139,8 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
 
       // Se for no futuro (>= hoje), verificamos se já foi lançado
       if (targetDate >= now) {
-        const alreadyLaunched = transactions.some(t => 
+        const alreadyLaunched = transactions.some(t =>
+           t.date === dateStr &&
            t.description === r.description
         );
         return !alreadyLaunched;
