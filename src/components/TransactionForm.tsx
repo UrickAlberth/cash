@@ -153,14 +153,20 @@ export function TransactionForm({ categories, cards, onAdd, onAddCategory }: Pro
             {type === 'credit_card' && (
                <div className="space-y-2">
                 <Label>Parcelas</Label>
-                <Select value={installments} onValueChange={setInstallments}>
-                  <SelectTrigger className="rounded-xl h-12">
-                    <SelectValue placeholder="1x" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1,2,3,4,5,6,10,12].map(n => <SelectItem key={n} value={n.toString()}>{n}x</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <div className="relative">
+  <Input
+    type="number"
+    min={1}
+    max={99}
+    value={installments}
+    onChange={(e) => setInstallments(e.target.value)}
+    placeholder="1"
+    className="rounded-xl h-12 pr-10"
+  />
+  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+    x
+  </span>
+</div>
               </div>
             )}
           </div>
