@@ -139,10 +139,18 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
 
       // Se for no futuro (>= hoje), verificamos se já foi lançado
       if (targetDate >= now) {
-        const alreadyLaunched = transactions.some(t =>
-           t.date === dateStr &&
-           t.description === r.description
-        );
+        const alreadyLaunched = transactions.some(t => {
+        if (t.description !== r.description) return false;
+          
+        const tDate = new Date(t.date + 'T12:00:00');
+        tDate.setHours(0, 0, 0, 0);
+
+        const rStart = new Date(r.startDate + 'T12:00:00');
+        rStart.setHours(0, 0, 0, 0);
+
+        // só considera lançamentos após início da recorrência
+        return tDate >= rStart;
+        });
         return !alreadyLaunched;
       }
       return false; // No passado, só conta o que está no extrato real
