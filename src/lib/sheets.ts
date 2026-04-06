@@ -76,7 +76,7 @@ export async function sendToSheets(tx: Transaction): Promise<void> {
       date: tx.date, // data da primeira parcela
       categoria: cc.name.toUpperCase(),
       subcategoria: categoria,
-      descricao: baseDesc, // limpa (1/12)
+      descricao: tx.description,
       valor: tx.value,
       repetitions: installments,
     };
