@@ -134,28 +134,24 @@ export function FutureBalancePrediction({ currentBalance, transactions, recurrin
       if (r.dayOfMonth !== day) return false;
       
       const startDate = new Date(r.startDate + 'T12:00:00');
-      // Só projetamos se a data for igual ou superior ao início
       if (targetDate < startDate) return false;
-
-      // Se for no futuro (>= hoje), verificamos se já foi lançado
+      
       if (targetDate >= now) {
+        // AJUSTE AQUI: Verificar se a conta já foi lançada em qualquer data 
+        // dentro do mês/ano de referência, não apenas no dateStr.
         const alreadyLaunched = transactions.some(t => {
-        if (t.description !== r.description) return false;
-          
-        const tDate = new Date(t.date + 'T12:00:00');
-        tDate.setHours(0, 0, 0, 0);
-
-        const rStart = new Date(r.startDate + 'T12:00:00');
-        rStart.setHours(0, 0, 0, 0);
-
-        // só considera lançamentos após início da recorrência
-        return tDate >= rStart;
+          const tDate = new Date(t.date + 'T12:00:00');
+          return (
+           t.description === r.description && 
+           tDate.getMonth() === month && 
+           tDate.getFullYear() === year
+           );
         });
+      
         return !alreadyLaunched;
       }
-      return false; // No passado, só conta o que está no extrato real
+      return false;
     });
-
     const cardBillItems = cards.map(card => {
       const dueDateForMonth = clampDueDate(year, month, card.dueDay);
       if (dueDateForMonth.getTime() !== targetDate.getTime()) return null;
