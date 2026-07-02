@@ -258,6 +258,8 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
     };
   }, [transactions]);
 
+  console.log(summary)
+
   const addTransaction = useCallback(async (newTx: any) => {
     if (newTx.isRecurring) {
       const recurringItem: Omit<RecurringExpense, 'id'> = {
