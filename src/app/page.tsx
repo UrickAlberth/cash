@@ -254,7 +254,7 @@ function AppContent({ userId, onSignOut }: { userId: string; onSignOut: () => Pr
       totalIncome: totalIncome + totalWithdrawals,
       totalExpense: totalExpense + paidCardBillsTotal,
       totalSavings: allSavings - allWithdrawals,
-      netProfit: (totalIncome + totalWithdrawals) - (totalExpense + paidCardBillsTotal + totalSavings)
+      netProfit:  totalIncome +  totalWithdrawals -  totalExpense -  paidCardBillsTotal -  totalSavings
     };
   }, [transactions]);
 
